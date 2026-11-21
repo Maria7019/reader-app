@@ -24,6 +24,22 @@
 .section-chips{display:flex;flex-wrap:wrap;gap:10px}.section-chips .chip{padding:9px 16px;background:#edf0e4;font-size:14px}
 .nav{padding-top:11px}.nav button{font-size:12px}.nav b{font-size:23px}
 @media(max-width:420px){.daily-card{padding:15px;gap:12px}.daily-cover{width:94px;height:145px}.daily-info h2{font-size:18px}.daily-info p{font-size:13px}.continue-card{min-height:98px}}
+
+.content{padding:8px 16px 24px}.top{padding:16px 18px 4px}.brand{font-size:31px}
+.home-search{height:49px;margin:8px 0 17px;border-radius:18px;padding:0 13px}
+.home-search input{font-size:14px}
+.daily-card{width:100%;min-height:148px;padding:13px 15px;gap:13px;border-radius:21px}
+.daily-cover{width:82px;height:116px;border-radius:8px;padding:7px}.daily-cover span{font-size:13px}
+.daily-info h2{font-size:17px;margin-bottom:5px}.daily-info p{font-size:12px;line-height:1.35;margin-bottom:9px;-webkit-line-clamp:2}
+.daily-add{font-size:12px;padding:8px 12px;border-radius:20px}
+.home-section{margin-top:21px}.home-section .section-head{margin-bottom:9px}.home-section .section-head h2{font-size:19px}
+.continue-list{gap:9px}.continue-card{min-height:83px;padding:9px 11px;gap:11px;border-radius:18px}
+.continue-cover{width:56px;height:68px;border-radius:6px;font-size:11px;line-height:1.15}
+.continue-meta strong{font-size:14px}.continue-meta .muted{font-size:12px}.progress{height:5px;margin:7px 0 5px}
+.author-strip{gap:13px;padding:3px 0 8px}.author-item{width:68px}
+.author-avatar{width:56px;height:56px;font-size:19px;border:2px solid #fff;box-shadow:0 2px 7px #2221}
+.author-item strong{font-size:11px}.section-chips{gap:7px}.section-chips .chip{font-size:12px;padding:7px 12px}
+@media(max-width:420px){.content{padding:7px 14px 22px}.daily-card{min-height:138px;padding:11px 12px;gap:10px}.daily-cover{width:72px;height:105px}.daily-info h2{font-size:16px}.daily-info p{font-size:11px}.daily-add{font-size:11px;padding:7px 10px}.continue-card{min-height:78px;padding:8px 9px}.continue-cover{width:50px;height:63px}}
 </style></head><body><div id="app"><header class="top"><div class="brand">Inkly</div><button class="avatar-btn" onclick="go('profile')" aria-label="Профиль">И</button></header><main class="content" id="view"></main><nav class="nav"><button data-tab="home" onclick="go('home')"><b>⌂</b>Главная</button><button data-tab="library" onclick="go('library')"><b>▤</b>Библиотека</button><button data-tab="profile" onclick="go('profile')"><b>◯</b>Профиль</button></nav></div><div id="modal-root"></div>
 <script>
 var KEY='inkly_v1',initial={books:[{id:'b1',title:'Steal Like an Artist',author:'Austin Kleon',year:'2012',discipline:'Творчество',description:'Книга о творчестве, влияниях и поиске собственного художественного языка.',opinion:'',cover:'',color:'#727b59',status:'Прочитано',rating:5,notes:[],characters:[],quotes:[]}],disciplines:['Творчество','Психология','История','Философия','Феминизм','Криминология','Экономика','Политика','Литература'],profile:{name:'Читатель',about:'Моя личная библиотека и пространство мыслей.'},theme:'#6d7954'};
@@ -43,23 +59,26 @@ function homePage(v){
  v.innerHTML='<div class="home-search"><span style="color:#8b8e80">⌕</span><input id="home-search" placeholder="Найти книгу, автора или тему..." onkeydown="if(event.key===\'Enter\'){searchText=this.value;go(\'library\')}"><button onclick="searchText=document.getElementById(\'home-search\').value;go(\'library\')">Найти</button></div>'+
  '<section class="daily-card" id="daily-content"><div class="daily-cover"><span>Книга<br>дня</span></div><div class="daily-info"><h2>Подбираем книгу дня…</h2><p>Ищем книгу по твоим интересам и любимым разделам.</p></div></section>'+
  '<section class="home-section"><div class="section-head"><h2>Продолжить записи</h2><button class="btn ghost small" onclick="go(\'notes\')">Все записи</button></div><div class="continue-wrap"><div class="continue-list" id="continue-list"></div><div class="continue-controls"><button onclick="shiftContinue(-1)" aria-label="Предыдущие книги">‹</button><button onclick="shiftContinue(1)" aria-label="Следующие книги">›</button></div></div></section>'+
- '<section class="home-section"><div class="section-head"><h2>Мои авторы</h2></div><div class="author-strip">'+(authors.length?authors.map(function(a){return '<div class="author-item"><div class="author-avatar">'+initials(a)+'</div><strong>'+esc(a)+'</strong></div>'}).join(''):'<div class="muted">Авторы появятся здесь, когда ты начнёшь делать заметки в книгах.</div>')+'</div></section>'+
+ '<section class="home-section"><div class="section-head"><h2>Мои авторы</h2></div><div class="author-strip">'+(authors.length?authors.map(function(a){return '<div class="author-item"><div class="author-avatar">'+initials(a)+'</div><strong>'+esc(a)+'</strong></div>'}).join(''):['Austin Kleon','James Clear','Rick Rubin','Ursula Le Guin','Virginia Woolf'].map(function(a){return '<div class="author-item"><div class="author-avatar">'+initials(a)+'</div><strong>'+esc(a)+'</strong></div>'}).join(''))+'</div></section>'+
  '<section class="home-section"><div class="section-head"><h2>Мои разделы</h2></div><div class="section-chips">'+sections.map(function(d){return '<span class="chip">'+esc(d)+'</span>'}).join('')+'</div></section>';
  renderContinue();
  loadBookOfDay();
 }
 function renderContinue(){
  var el=document.getElementById('continue-list');if(!el)return;
- var items=state.books.filter(function(b){return (b.notes||[]).some(function(n){return String(n||'').trim()})}).slice(0,5);
+ var noted=state.books.filter(function(b){return (b.notes||[]).some(function(n){return String(n||'').trim()})}).slice(0,5);
+ var items=noted.length?noted:state.books.slice(0,5);
+ var demo=[{id:'demo-atomic',title:'Atomic Habits',author:'James Clear',color:'#a08d6d',demo:true,progress:48},{id:'demo-creative',title:'The Creative Act',author:'Rick Rubin',color:'#68747d',demo:true,progress:28},{id:'demo-woolf',title:'A Room of One Own',author:'Virginia Woolf',color:'#7c8064',demo:true,progress:65}];
+ while(items.length<2&&demo.length)items.push(demo.shift());
  if(!items.length){el.innerHTML='<div class="empty">Здесь появятся книги, в которых ты ведёшь записи.</div>';return}
  continuePage=Math.min(continuePage,Math.max(0,Math.ceil(items.length/2)-1));
  var visible=items.slice(continuePage*2,continuePage*2+2);
- el.innerHTML=visible.map(function(b){var done=(b.notes||[]).filter(function(n){return String(n||'').trim()}).length;var total=Math.max(done,1);var cover=b.cover?'background-image:linear-gradient(#0002,#0003),url('+JSON.stringify(b.cover)+')':'background:'+esc(b.color||'#9b896d');return '<article class="continue-card" onclick="openBook(&quot;'+b.id+'&quot;);detailTab=&quot;notes&quot;;render()"><div class="continue-cover" style="'+cover+'">'+(b.cover?'':esc(b.title))+'</div><div class="continue-meta"><strong>'+esc(b.title)+'</strong><div class="muted">'+esc(b.author)+'</div><div class="progress"><span style="width:'+Math.min(100,done*25)+'%"></span></div><div class="muted" style="font-size:12px">Есть записи · продолжить</div></div></article>'}).join('');
+ el.innerHTML=visible.map(function(b){var done=(b.notes||[]).filter(function(n){return String(n||'').trim()}).length;var progress=b.demo?b.progress:Math.min(100,done*25);var cover=b.cover?'background-image:linear-gradient(#0002,#0003),url('+JSON.stringify(b.cover)+')':'background:'+esc(b.color||'#9b896d');return '<article class="continue-card" '+(b.demo?'':'onclick="openBook(&quot;'+b.id+'&quot;);detailTab=&quot;notes&quot;;render()"')+'><div class="continue-cover" style="'+cover+'">'+(b.cover?'':esc(b.title))+'</div><div class="continue-meta"><strong>'+esc(b.title)+'</strong><div class="muted">'+esc(b.author)+'</div><div class="progress"><span style="width:'+progress+'%"></span></div><div class="muted" style="font-size:11px">'+(b.demo?'Пример оформления':'Есть записи · продолжить')+'</div></div></article>'}).join('');
  var controls=document.querySelector('.continue-controls');if(controls)controls.style.display=items.length>2?'flex':'none';
  el.ontouchstart=function(e){this.dataset.touchX=e.changedTouches[0].screenX};
  el.ontouchend=function(e){var dx=e.changedTouches[0].screenX-Number(this.dataset.touchX||0);if(Math.abs(dx)>45)shiftContinue(dx<0?1:-1)};
 }
-function shiftContinue(d){var items=state.books.filter(function(b){return (b.notes||[]).some(function(n){return String(n||'').trim()})}).slice(0,5);var pages=Math.ceil(items.length/2);if(!pages)return;continuePage=(continuePage+d+pages)%pages;renderContinue()}
+function shiftContinue(d){var items=state.books.filter(function(b){return (b.notes||[]).some(function(n){return String(n||'').trim()})}).slice(0,5);if(!items.length)items=state.books.slice(0,5);if(items.length<2)items=items.concat([{id:'demo-atomic'},{id:'demo-creative'}].slice(0,2-items.length));var pages=Math.ceil(items.length/2);if(!pages)return;continuePage=(continuePage+d+pages)%pages;renderContinue()}
 function loadBookOfDay(){
  var box=document.getElementById('daily-content');if(!box)return;
  var today=new Date().toISOString().slice(0,10);
