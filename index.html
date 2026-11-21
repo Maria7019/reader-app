@@ -125,6 +125,33 @@
  .author-avatar{width:52px;height:52px}
 }
 
+
+/* Profile page — static visual template */
+.profile-head{display:flex;align-items:center;justify-content:space-between;margin:2px 2px 16px;color:var(--olive);font-size:13px}
+.profile-back,.profile-edit{color:var(--olive);font-size:13px}
+.profile-identity{display:flex;flex-direction:column;align-items:center;padding:5px 0 22px}
+.profile-avatar-wrap{position:relative;margin-bottom:12px}
+.profile-avatar{width:88px;height:88px;border-radius:50%;background:var(--olive);display:grid;place-items:center;color:white;font:32px Georgia;box-shadow:0 5px 16px #30351c18}
+.profile-pencil{position:absolute;left:-18px;top:35px;width:27px;height:27px;border-radius:50%;background:var(--paper);border:1px solid var(--line);display:grid;place-items:center;color:var(--olive);font-size:16px;z-index:1}
+.profile-nickname{font:500 22px Georgia;color:var(--ink);margin-bottom:2px}
+.profile-email{font-size:12px;color:#96988e}
+.profile-settings{display:flex;flex-direction:column;gap:8px;margin:0 0 24px}
+.profile-setting{height:54px;border:1px solid var(--line);background:var(--paper);border-radius:15px;padding:0 15px;display:flex;align-items:center;gap:12px;color:var(--ink);font-size:14px}
+.profile-setting-icon{width:25px;text-align:center;color:var(--olive);font-size:18px}
+.profile-chevron{margin-left:auto;color:#a0a391;font-size:22px;font-weight:300}
+.profile-section-title{font:500 23px Georgia;margin:22px 2px 12px;color:var(--ink)}
+.profile-panel{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:20px}
+.profile-label{font-size:14px;color:var(--muted);margin-bottom:18px}
+.profile-colors{display:flex;align-items:center;flex-wrap:wrap;gap:13px 15px}
+.profile-swatch{width:39px;height:39px;border-radius:50%;display:block;border:1px solid #00000008;box-shadow:0 1px 3px #0000000c}
+.profile-data-title{margin-top:25px}
+.profile-data p{margin:0;color:var(--muted);font-size:14px;line-height:1.55}
+.profile-data-actions{display:flex;gap:10px;margin:17px 0;flex-wrap:wrap}
+.profile-data-actions span{background:var(--soft);color:var(--olive);border-radius:14px;padding:11px 14px;font-size:13px;font-weight:650}
+.profile-data .profile-data-note{font-size:12px;line-height:1.55}
+.profile-logout{text-align:center;color:#a06d72;font-size:12px;margin:25px 0 8px;padding:10px}
+@media(max-width:420px){.profile-avatar{width:82px;height:82px}.profile-setting{height:51px;font-size:13px;padding:0 12px}.profile-setting-icon{font-size:17px}.profile-panel{padding:17px}.profile-swatch{width:35px;height:35px;gap:10px}}
+
 </style></head><body><div id="app"><header class="top"><div class="brand"><span class="brand-main">Ink</span><span class="brand-accent">ly</span></div><button class="avatar-btn" onclick="go('profile')" aria-label="Профиль">И</button></header><main class="content" id="view"></main><nav class="nav"><button data-tab="home" onclick="go('home')"><b>⌂</b>Главная</button><button data-tab="library" onclick="go('library')"><b>▤</b>Библиотека</button><button data-tab="profile" onclick="go('profile')"><b>◯</b>Профиль</button></nav></div><div id="modal-root"></div>
 <script>
 var KEY='inkly_v1',initial={books:[{id:'b1',title:'Steal Like an Artist',author:'Austin Kleon',year:'2012',discipline:'Творчество',description:'Книга о творчестве, влияниях и поиске собственного художественного языка.',opinion:'',cover:'',color:'#727b59',status:'Прочитано',rating:5,notes:[],characters:[],quotes:[]}],disciplines:['Творчество','Психология','История','Философия','Феминизм','Криминология','Экономика','Политика','Литература'],profile:{name:'Читатель',about:'Моя личная библиотека и пространство мыслей.'},theme:'#6d7954'};
@@ -184,7 +211,32 @@ function render(){document.querySelectorAll('.nav button').forEach(function(x){x
 if(tab==='home'){homePage(v)}
 if(tab==='library'){var books=state.books.filter(function(b){return (b.title+' '+b.author+' '+b.discipline).toLowerCase().includes(searchText.toLowerCase())});v.innerHTML='<div class="greeting"><div class="tag">Коллекция</div><h1>Моя библиотека</h1><div class="muted">Собрание прочитанного и того, что ещё впереди.</div></div><input class="search" placeholder="Поиск по названию, автору или теме…" value="'+esc(searchText)+'" oninput="searchText=this.value;render()"><div class="section-head"><h2>'+books.length+' книг</h2><button class="btn small" onclick="bookForm()">＋ Добавить</button></div>'+(books.length?'<div class="shelf">'+books.map(bookCard).join('')+'</div>':'<div class="empty">Ничего не найдено.</div>')}
 if(tab==='notes'){var all=state.books.filter(function(b){return (b.notes||[]).length});v.innerHTML='<div class="greeting"><div class="tag">Записная книжка</div><h1>Мои заметки</h1><div class="muted">Мысли, наблюдения и цитаты, связанные с книгами.</div></div>'+(all.length?all.map(function(b){return '<div class="panel rowitem"><strong>'+esc(b.title)+'</strong><small>'+b.notes.length+' страниц заметок</small><div class="actions"><button class="btn light small" onclick="openBook(\''+b.id+'\');detailTab=\'notes\';render()">Открыть заметки</button></div></div>'}).join(''):'<div class="empty">Заметки появятся здесь после добавления на страницы книг.</div>')}
-if(tab==='profile'){v.innerHTML='<div class="greeting"><div class="tag">Настройки</div><h1>Профиль</h1><div class="muted">Ваше пространство Inkly.</div></div><div class="panel"><div class="field"><label>Имя</label><input id="pname" value="'+esc(state.profile.name)+'"></div><div class="field"><label>О себе</label><textarea id="pabout">'+esc(state.profile.about)+'</textarea></div><button class="btn" onclick="saveProfile()">Сохранить профиль</button></div><div class="section-head"><h2>Оформление</h2></div><div class="panel"><div class="muted">Цвет интерфейса</div><div class="chips">'+['#6d7954','#7b6658','#647b83','#89718b','#a47755'].map(function(c){return '<button onclick="setTheme(\''+c+'\')" style="width:34px;height:34px;border-radius:50%;border:2px solid white;background:'+c+'"></button>'}).join('')+'</div></div><div class="section-head"><h2>Данные</h2></div><div class="panel"><p class="muted">Сохраните резервную копию библиотеки или восстановите её на другом устройстве.</p><div class="actions"><button class="btn light" onclick="exportBackup()">Экспорт данных</button><button class="btn light" onclick="document.getElementById(\'import-file\').click()">Импорт данных</button><input id="import-file" class="hide" type="file" accept="application/json" onchange="importBackup(event)"></div><p class="muted" style="font-size:12px">Данные пока хранятся в этом браузере. Синхронизация между устройствами и аккаунты требуют серверного подключения.</p></div><div class="section-head"><h2>Категории</h2><button class="btn light small" onclick="manageDisciplines()">Управлять</button></div>'}}
+if(tab==='profile'){
+v.innerHTML=`
+<div class="profile-head"><span class="profile-back">← Назад</span><span class="profile-edit">Изменить</span></div>
+<div class="profile-identity">
+  <div class="profile-avatar-wrap"><span class="profile-pencil">✎</span><div class="profile-avatar">И</div></div>
+  <div class="profile-nickname">Никнейм</div>
+  <div class="profile-email">Электронная почта</div>
+</div>
+<div class="profile-settings">
+  ${['Управление аккаунтом','Настройки профиля','Уведомления','Настройка рекомендаций','Конфиденциальность и данные','Безопасность','Добавить аккаунт','Связь с ChatGPT'].map(function(x,i){return '<div class="profile-setting"><span class="profile-setting-icon">'+['♙','⚙','♧','✧','◈','⌑','＋','✳'][i]+'</span><span>'+x+'</span><span class="profile-chevron">›</span></div>'}).join('')}
+</div>
+<div class="profile-section-title">Оформление</div>
+<div class="profile-panel">
+  <div class="profile-label">Цвет интерфейса</div>
+  <div class="profile-colors">
+    ${['#6d7954','#7b6658','#647b83','#89718b','#a47755','#cfb4c0','#71435c','#24243d','#8e3047'].map(function(c){return '<span class="profile-swatch" style="background:'+c+'"></span>'}).join('')}
+  </div>
+</div>
+<div class="profile-section-title profile-data-title">Данные</div>
+<div class="profile-panel profile-data">
+  <p>Сохраните резервную копию библиотеки или восстановите её на другом устройстве.</p>
+  <div class="profile-data-actions"><span>Экспорт данных</span><span>Импорт данных</span></div>
+  <p class="profile-data-note">Данные пока хранятся в этом браузере. Синхронизация между устройствами и аккаунты требуют серверного подключения.</p>
+</div>
+<div class="profile-logout">Выйти из аккаунта</div>`;
+}
 function openBook(id){state.activeBook=id;detailTab='about';notePage=0;render()}function active(){return state.books.find(function(b){return b.id===state.activeBook})}
 function detail(v){var b=active();if(!b){state.activeBook=null;render();return}v.innerHTML='<button class="back" onclick="state.activeBook=null;render()">← Назад</button><div class="detail-top">'+bookCover(b,'detail-cover')+'<div><h1>'+esc(b.title)+'</h1><div class="muted">'+esc(b.author)+'</div><div class="chips"><span class="chip">'+esc(b.status||'Прочитано')+'</span>'+(b.discipline?'<span class="chip">'+esc(b.discipline)+'</span>':'')+'</div><div class="muted" style="font-size:12px">'+(b.year?'Год: '+esc(b.year):'')+(b.rating?' · Оценка: '+'★'.repeat(b.rating):'')+'</div><div class="actions"><button class="btn light small" onclick="bookForm(\''+b.id+'\')">Изменить</button><button class="btn ghost small" onclick="deleteBook(\''+b.id+'\')">Удалить</button></div></div></div><div class="tabs">'+[['about','О книге'],['review','Моё мнение'],['notes','Заметки'],['extras','Цитаты и герои']].map(function(a){return '<button class="'+(detailTab===a[0]?'active':'')+'" onclick="detailTab=\''+a[0]+'\';render()">'+a[1]+'</button>'}).join('')+'</div><div id="detail-body"></div>';var body=document.getElementById('detail-body');if(detailTab==='about')body.innerHTML='<div class="panel"><div class="tag">Описание</div><p>'+esc(b.description||'Описание пока не добавлено.')+'</p></div>';if(detailTab==='review')body.innerHTML='<div class="field"><label>Личное мнение и рецензия</label><textarea id="review-text" placeholder="Что вы думаете об этой книге?">'+esc(b.opinion)+'</textarea></div><button class="btn" onclick="saveReview()">Сохранить мнение</button>';if(detailTab==='notes')body.innerHTML='<div class="page-controls"><button onclick="changePage(-1)">← Предыдущая</button><span class="muted">Страница '+(notePage+1)+' из '+Math.max(1,(b.notes||[]).length)+'</span><button onclick="changePage(1)">Следующая →</button></div><div class="note-page"><textarea id="note-text" placeholder="Запишите мысль, наблюдение или идею…">'+esc((b.notes||[])[notePage]||'')+'</textarea><span class="page-num">'+(notePage+1)+'</span></div><div class="actions"><button class="btn" onclick="saveNote()">Сохранить страницу</button><button class="btn light" onclick="addPage()">＋ Новая страница</button></div>';if(detailTab==='extras')body.innerHTML='<div class="field"><label>Цитаты — каждая с новой строки</label><textarea id="quotes-text">'+esc((b.quotes||[]).join('\n'))+'</textarea></div><div class="field"><label>Персонажи и темы</label><textarea id="characters-text">'+esc((b.characters||[]).join('\n'))+'</textarea></div><button class="btn" onclick="saveExtras()">Сохранить</button>'}
 function modal(html){document.getElementById('modal-root').innerHTML='<div class="modal" onclick="if(event.target===this)closeModal()">'+html+'</div>'}function closeModal(){document.getElementById('modal-root').innerHTML=''}
