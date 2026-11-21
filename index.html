@@ -78,7 +78,7 @@ function renderContinue(){
  el.ontouchstart=function(e){this.dataset.touchX=e.changedTouches[0].screenX};
  el.ontouchend=function(e){var dx=e.changedTouches[0].screenX-Number(this.dataset.touchX||0);if(Math.abs(dx)>45)shiftContinue(dx<0?1:-1)};
 }
-function shiftContinue(d){var items=state.books.filter(function(b){return (b.notes||[]).some(function(n){return String(n||'').trim()})}).slice(0,5);if(!items.length)items=state.books.slice(0,5);if(items.length<2)items=items.concat([{id:'demo-atomic'},{id:'demo-creative'}].slice(0,2-items.length));var pages=Math.ceil(items.length/2);if(!pages)return;continuePage=(continuePage+d+pages)%pages;renderContinue()}
+function shiftContinue(d){var items=state.books.filter(function(b){return (b.notes||[]).some(function(n){return String(n||'').trim()})}).slice(0,5);if(!items.length)items=state.books.slice(0,5);var demos=[{id:'demo-atomic'},{id:'demo-creative'}];while(items.length<2&&demos.length)items.push(demos.shift());var pages=Math.ceil(items.length/2);if(pages<2)return;continuePage=(continuePage+d+pages)%pages;renderContinue()}
 function loadBookOfDay(){
  var box=document.getElementById('daily-content');if(!box)return;
  var today=new Date().toISOString().slice(0,10);
