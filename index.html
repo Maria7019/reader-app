@@ -79,6 +79,52 @@
  .continue-cover{width:42px;height:53px}
 }
 
+
+/* Screenshot-matched mobile sizing */
+.top{padding:16px 18px 4px}
+.brand{font-size:32px;letter-spacing:-1.4px}
+.avatar-btn{width:40px;height:40px;font-size:16px}
+.content{padding:8px 18px 24px}
+.home-search{height:48px;margin:9px 0 18px;padding:0 13px;border-radius:18px}
+.home-search input{font-size:14px}
+.home-search button{font-size:13px}
+.daily-card{min-height:154px;padding:13px 14px;gap:12px;border-radius:19px}
+.daily-cover{width:82px;height:120px;padding:8px;border-radius:8px}
+.daily-cover span{font-size:13px;line-height:1.2}
+.daily-info h2{font-size:16px;line-height:1.22;margin-bottom:5px}
+.daily-info p{font-size:11.5px;line-height:1.35;margin-bottom:9px;-webkit-line-clamp:2}
+.daily-add{font-size:11.5px;padding:7px 11px}
+.home-section{margin-top:20px}
+.home-section .section-head h2{font-size:18px}
+.continue-list{gap:9px}
+.continue-card{min-height:84px;padding:9px 11px;gap:11px;border-radius:17px}
+.continue-cover{width:54px;height:68px;font-size:11px;padding:5px}
+.continue-meta strong{font-size:14px}
+.continue-meta .muted{font-size:12px}
+.progress{height:5px;margin:7px 0 5px}
+.author-strip{gap:12px;padding:3px 0 8px}
+.author-item{width:66px}
+.author-avatar{width:55px;height:55px;font-size:18px;margin-bottom:6px}
+.author-item strong{font-size:11px}
+.section-chips{gap:7px}
+.section-chips .chip{font-size:12px;padding:7px 11px}
+.nav{padding:9px 10px calc(9px + env(safe-area-inset-bottom))}
+.nav button{font-size:11px;gap:3px}
+.nav b{font-size:21px}
+@media(max-width:420px){
+ .top{padding:15px 16px 3px}
+ .content{padding:7px 16px 23px}
+ .home-search{height:46px;margin:8px 0 16px}
+ .daily-card{min-height:146px;padding:11px 12px;gap:10px}
+ .daily-cover{width:76px;height:110px}
+ .daily-info h2{font-size:15px}
+ .daily-info p{font-size:11px}
+ .daily-add{font-size:11px;padding:7px 10px}
+ .continue-card{min-height:80px;padding:8px 10px}
+ .continue-cover{width:50px;height:64px}
+ .author-avatar{width:52px;height:52px}
+}
+
 </style></head><body><div id="app"><header class="top"><div class="brand"><span class="brand-main">Ink</span><span class="brand-accent">ly</span></div><button class="avatar-btn" onclick="go('profile')" aria-label="Профиль">И</button></header><main class="content" id="view"></main><nav class="nav"><button data-tab="home" onclick="go('home')"><b>⌂</b>Главная</button><button data-tab="library" onclick="go('library')"><b>▤</b>Библиотека</button><button data-tab="profile" onclick="go('profile')"><b>◯</b>Профиль</button></nav></div><div id="modal-root"></div>
 <script>
 var KEY='inkly_v1',initial={books:[{id:'b1',title:'Steal Like an Artist',author:'Austin Kleon',year:'2012',discipline:'Творчество',description:'Книга о творчестве, влияниях и поиске собственного художественного языка.',opinion:'',cover:'',color:'#727b59',status:'Прочитано',rating:5,notes:[],characters:[],quotes:[]}],disciplines:['Творчество','Психология','История','Философия','Феминизм','Криминология','Экономика','Политика','Литература'],profile:{name:'Читатель',about:'Моя личная библиотека и пространство мыслей.'},theme:'#6d7954'};
