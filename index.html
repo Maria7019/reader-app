@@ -253,10 +253,9 @@ function libraryBack(){if(libraryPath.subdiscipline){libraryPath.subdiscipline=n
 function randomLibraryIcon(){var icons=['♙','⚙','♣','✧','◇','☼','♧','✦','⌘','❋','◈','✺'];return icons[Math.floor(Math.random()*icons.length)]}
 function libraryCard(name,icon,count,kind,index,editing){
  var sub=kind==='subdiscipline',fn=sub?'openSubdiscipline':'openDiscipline',editFn=sub?'renameSubdiscipline':'renameDiscipline',delFn=sub?'deleteSubdiscipline':'deleteDiscipline';
- var attrs='data-name="'+esc(name)+'"';
- return '<div class="discipline-card '+(editing?'editing-row':'')+'" data-name="'+esc(name)+'" data-kind="'+kind+'" data-order-index="'+index+'" '+(editing?'':'role="button" tabindex="0" onclick="'+fn+'(this.getAttribute(\'data-name\'))"')+'>'+
+ return '<div class="discipline-card '+(editing?'editing-row':'')+'" data-name="'+esc(name)+'" data-kind="'+kind+'" data-order-index="'+index+'" '+(editing?'':'role="button" tabindex="0" onclick="'+fn+'(this.dataset.name)"')+'>'+
  '<span class="discipline-icon">'+esc(icon||'✧')+'</span><span class="discipline-copy"><strong>'+esc(name)+'</strong><small>'+esc(count)+'</small></span>'+
- (editing?'<button type="button" class="drag-handle" aria-label="Переместить" onpointerdown="startLibraryDrag(event,\''+kind+'\','+index+')">⠿</button><button type="button" class="discipline-edit" aria-label="Переименовать" onclick="event.stopPropagation();'+editFn+'(\''+esc(name).replace(/\\'/g,"\\\\'")+'\')">✎</button><button type="button" class="discipline-delete" aria-label="Удалить" onclick="event.stopPropagation();'+delFn+'(\''+esc(name).replace(/\\'/g,"\\\\'")+'\')">×</button>':'')+'</div>';
+ (editing?'<button type="button" class="drag-handle" aria-label="Переместить" onpointerdown="startLibraryDrag(event,this.parentElement.dataset.kind,Number(this.parentElement.dataset.orderIndex))">⠿</button><button type="button" class="discipline-edit" aria-label="Переименовать" onclick="event.stopPropagation();'+editFn+'(this.parentElement.dataset.name)">✎</button><button type="button" class="discipline-delete" aria-label="Удалить" onclick="event.stopPropagation();'+delFn+'(this.parentElement.dataset.name)">×</button>':'')+'</div>';
 }
 function startLibraryDrag(event,kind,index){
  event.preventDefault();event.stopPropagation();libraryDrag={kind:kind,from:index};
