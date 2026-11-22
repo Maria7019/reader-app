@@ -254,15 +254,15 @@ function randomLibraryIcon(){var icons=['♙','⚙','♣','✧','◇','☼','♧
 function libraryCard(name,icon,count,kind,index,editing){
  var sub=kind==='subdiscipline',fn=sub?'openSubdiscipline':'openDiscipline',editFn=sub?'renameSubdiscipline':'renameDiscipline',delFn=sub?'deleteSubdiscipline':'deleteDiscipline';
  var attrs='data-name="'+esc(name)+'"';
- return '<div class="discipline-card '+(editing?'editing-row':'')+'" data-order-index="'+index+'" '+(editing?'':'role="button" tabindex="0" onclick="'+fn+'(this.getAttribute(\'data-name\'))"')+'>'+
+ return '<div class="discipline-card '+(editing?'editing-row':'')+'" data-name="'+esc(name)+'" data-kind="'+kind+'" data-order-index="'+index+'" '+(editing?'':'role="button" tabindex="0" onclick="'+fn+'(this.getAttribute(\'data-name\'))"')+'>'+
  '<span class="discipline-icon">'+esc(icon||'✧')+'</span><span class="discipline-copy"><strong>'+esc(name)+'</strong><small>'+esc(count)+'</small></span>'+
  (editing?'<button type="button" class="drag-handle" aria-label="Переместить" onpointerdown="startLibraryDrag(event,\''+kind+'\','+index+')">⠿</button><button type="button" class="discipline-edit" aria-label="Переименовать" onclick="event.stopPropagation();'+editFn+'(\''+esc(name).replace(/\\'/g,"\\\\'")+'\')">✎</button><button type="button" class="discipline-delete" aria-label="Удалить" onclick="event.stopPropagation();'+delFn+'(\''+esc(name).replace(/\\'/g,"\\\\'")+'\')">×</button>':'')+'</div>';
 }
 function startLibraryDrag(event,kind,index){
  event.preventDefault();event.stopPropagation();libraryDrag={kind:kind,from:index};
  var row=event.currentTarget.closest('.discipline-card');if(row)row.classList.add('dragging');
- function move(e){if(!libraryDrag)return;var el=document.elementFromPoint(e.clientX,e.clientY),target=el&&el.closest('.discipline-card');document.querySelectorAll('.discipline-card.drop-target').forEach(function(x){x.classList.remove('drop-target')});if(target&&target.parentElement&&target.parentElement.id==='library-results'&&Number(target.dataset.orderIndex)!==libraryDrag.from)target.classList.add('drop-target')}
- function up(e){if(!libraryDrag)return;var drag=libraryDrag;libraryDrag=null;var el=document.elementFromPoint(e.clientX,e.clientY),target=el&&el.closest('.discipline-card'),to=target&&target.parentElement&&target.parentElement.id==='library-results'?Number(target.dataset.orderIndex):drag.from;document.querySelectorAll('.discipline-card').forEach(function(x){x.classList.remove('dragging','drop-target')});if(Number.isInteger(to)&&to!==drag.from)moveLibraryItem(drag.kind,drag.from,to);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)}
+ function move(e){if(!libraryDrag)return;var el=document.elementFromPoint(e.clientX,e.clientY),target=el&&el.closest('.discipline-card');document.querySelectorAll('.discipline-card.drop-target').forEach(function(x){x.classList.remove('drop-target')});if(target&&target.dataset.kind===libraryDrag.kind&&target.closest('#library-results')&&Number(target.dataset.orderIndex)!==libraryDrag.from)target.classList.add('drop-target')}
+ function up(e){if(!libraryDrag)return;var drag=libraryDrag;libraryDrag=null;var el=document.elementFromPoint(e.clientX,e.clientY),target=el&&el.closest('.discipline-card'),to=target&&target.dataset.kind===drag.kind&&target.closest('#library-results')?Number(target.dataset.orderIndex):drag.from;document.querySelectorAll('.discipline-card').forEach(function(x){x.classList.remove('dragging','drop-target')});if(Number.isInteger(to)&&to!==drag.from)moveLibraryItem(drag.kind,drag.from,to);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)}
  window.addEventListener('pointermove',move);window.addEventListener('pointerup',up,{once:true});
 }
 function moveLibraryItem(kind,from,to){
@@ -274,14 +274,14 @@ function libraryCardsHtml(){
  var q=librarySearch.trim().toLowerCase(),html='';
  if(!libraryPath.discipline){
   var names=state.disciplines.filter(function(d){return !q||d.toLowerCase().includes(q)||(state.subdisciplines[d]||[]).some(function(s){return s.toLowerCase().includes(q)})});
-  html='<div id="library-results" class="discipline-grid '+(disciplineEditMode?'editing':'')+'">'+(names.length?names.map(function(d){var index=state.disciplines.indexOf(d),count=(state.subdisciplines[d]||[]).length;return libraryCard(d,state.disciplineIcons[d],count?count+' подраздела':state.books.filter(function(b){return b.discipline===d}).length+' книг','discipline',index,disciplineEditMode)}).join(''):'<div class="empty library-empty">Дисциплины не найдены.</div>')+'</div>';
+  html='<div class="discipline-grid '+(disciplineEditMode?'editing':'')+'">'+(names.length?names.map(function(d){var index=state.disciplines.indexOf(d),count=(state.subdisciplines[d]||[]).length;return libraryCard(d,state.disciplineIcons[d],count?count+' подраздела':state.books.filter(function(b){return b.discipline===d}).length+' книг','discipline',index,disciplineEditMode)}).join(''):'<div class="empty library-empty">Дисциплины не найдены.</div>')+'</div>';
   if(q){var found=state.books.filter(function(b){return (b.title+' '+b.author+' '+(b.discipline||'')+' '+(b.subdiscipline||'')).toLowerCase().includes(q)});if(found.length)html+='<div class="library-subtitle">Найденные книги</div><div class="library-books">'+found.map(bookCard).join('')+'</div>'}
   return html;
  }
  var d=libraryPath.discipline,subs=state.subdisciplines[d]||[];
  if(!libraryPath.subdiscipline){
   var matching=subs.filter(function(s){return !q||s.toLowerCase().includes(q)});
-  html='<div id="library-results" class="discipline-grid '+(subdisciplineEditMode?'editing':'')+'">'+(matching.length?matching.map(function(s){var index=subs.indexOf(s),n=state.books.filter(function(b){return b.discipline===d&&b.subdiscipline===s}).length;var icons=state.subdisciplineIcons[d]||{};return libraryCard(s,icons[s],n+' книг','subdiscipline',index,subdisciplineEditMode)}).join(''):'<div class="empty library-empty">'+(q?'Подразделы не найдены.':'Пока нет подразделов. Добавьте первый раздел.')+'</div>')+'</div>';
+  html='<div class="discipline-grid '+(subdisciplineEditMode?'editing':'')+'">'+(matching.length?matching.map(function(s){var index=subs.indexOf(s),n=state.books.filter(function(b){return b.discipline===d&&b.subdiscipline===s}).length;var icons=state.subdisciplineIcons[d]||{};return libraryCard(s,icons[s],n+' книг','subdiscipline',index,subdisciplineEditMode)}).join(''):'<div class="empty library-empty">'+(q?'Подразделы не найдены.':'Пока нет подразделов. Добавьте первый раздел.')+'</div>')+'</div>';
   var unassigned=state.books.filter(function(b){return b.discipline===d&&!b.subdiscipline&&(!q||(b.title+' '+b.author).toLowerCase().includes(q))});
   if(unassigned.length)html+='<div class="library-subtitle">Книги без подраздела</div><div class="library-books">'+unassigned.map(bookCard).join('')+'</div>';
   return html;
@@ -289,7 +289,7 @@ function libraryCardsHtml(){
  var sub=libraryPath.subdiscipline,books=state.books.filter(function(b){return b.discipline===d&&b.subdiscipline===sub&&(!q||(b.title+' '+b.author).toLowerCase().includes(q))});
  return books.length?'<div class="library-books">'+books.map(bookCard).join('')+'</div>':'<div class="empty">Здесь пока нет книг. Добавьте первую.</div>';
 }
-function updateLibraryResults(){var box=document.getElementById('library-results');if(box)box.outerHTML=libraryCardsHtml()}
+function updateLibraryResults(){var box=document.getElementById('library-results');if(box)box.innerHTML=libraryCardsHtml()}
 function renderLibrary(v){
  var d=libraryPath.discipline,sub=libraryPath.subdiscipline,title=sub||d||'Моя библиотека';
  var subtitle=sub?'Книги и заметки в выбранном подразделе.':d?'Выберите подраздел или создайте собственную структуру.':'Собрание книг, идей и дисциплин, которые вы изучаете.';
