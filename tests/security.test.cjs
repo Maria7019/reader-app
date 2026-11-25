@@ -116,6 +116,7 @@ test('vault metadata validation rejects weak KDF settings', () => {
   const valid = {
     format: 'inkly-encrypted-v1',
     version: 1,
+    cipher: 'AES-256-GCM',
     kdf: { name: 'PBKDF2-HMAC-SHA-256', iterations: 600000 },
     passwordWrap: { salt: Buffer.alloc(16).toString('base64'), iv: Buffer.alloc(12).toString('base64'), ciphertext: Buffer.alloc(16).toString('base64') },
     recoveryWrap: { iv: Buffer.alloc(12).toString('base64'), ciphertext: Buffer.alloc(16).toString('base64') },
