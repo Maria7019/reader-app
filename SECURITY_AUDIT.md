@@ -87,15 +87,15 @@ The branch remains a draft and must not be merged into `main` until browser test
 
 ### Regression checks
 - Added a dependency-free Node.js test suite and GitHub Actions workflow.
-- Latest CI run `45619583393` completed successfully: 21 tests passed, 0 failed. This includes crypto round-trips, wrong-secret rejection, authenticated-tamper detection, nonce uniqueness, KDF metadata validation, plaintext-exclusion checks, update encryption, and payload-size validation.
+- Latest CI run `45619953497` completed successfully: 24 tests passed, 0 failed. This includes password and device-key unlock, recovery unlock, wrong-secret rejection, authenticated-tamper detection, nonce uniqueness, KDF metadata validation, plaintext-exclusion checks, update encryption, and payload-size validation.
 - Checks cover inline-script syntax, empty first-run library, corrupt-storage startup guard, absence of third-party script tags, legacy/versioned backup validation, malformed records, invalid metadata, and count limits.
 - These are static/logic regression checks, not a substitute for real browser interaction tests on Android and desktop.
 
 ### Cryptographic core (isolated; not yet active in the app)
 - Added a local same-origin `security-core.js` module using Web Crypto AES-256-GCM with 96-bit random nonces and 128-bit authentication tags.
 - Library content is encrypted under a randomly generated 256-bit data-encryption key (DEK).
-- The DEK is independently wrapped by a password-derived key (PBKDF2-HMAC-SHA-256, 600,000 iterations) and a 256-bit random recovery code.
-- The module does not persist passwords or recovery codes. The recovery code is returned once to the future setup flow; secure display/confirmation and user storage are not implemented yet.
+- The DEK is independently wrapped by a password-derived key (PBKDF2-HMAC-SHA-256, 600,000 iterations) when a password is chosen, or by a non-extractable device CryptoKey when the optional app password is omitted. A 256-bit random recovery code independently wraps the DEK in either mode.
+- In no-password mode, the non-extractable device CryptoKey must be stored separately in IndexedDB; this provides encryption at rest against casual plaintext inspection, not protection against malicious same-origin JavaScript or a compromised browser profile. The module does not persist passwords or recovery codes. The recovery code is returned once to the future setup flow; secure display/confirmation and user storage are not implemented yet.
 - Password and recovery unlock, authenticated decryption, metadata bounds, and nonce separation have automated tests.
 - The module is loaded locally but is not yet called by the application. Existing library persistence remains unchanged until the IndexedDB transaction and recovery lifecycle are ready.
 - PBKDF2 is a compatibility baseline, not a claim that it is optimal on every phone. Mobile timing must be measured before activation; consider a maintained, locally bundled Argon2id implementation if feasible.
