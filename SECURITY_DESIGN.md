@@ -139,3 +139,32 @@ The draft branch now includes a same-origin Web Crypto module and an isolated In
 
 - Added `vault-runtime.js` as a separate lifecycle coordinator: it distinguishes first-run setup, locked vault, and legacy migration states; requires an explicit setup confirmation before writing the new vault; supports password, recovery-code, and device-key unlock; serializes encrypted saves; and clears the in-memory DEK and plaintext state when locking.
 - The runtime is loaded by the page but is not yet connected to the app's live state or the existing synchronous `save()` call sites. Its lifecycle behavior has regression tests, including wrong credentials, legacy-data preservation, encrypted persistence, and lock/write sequencing. Do not treat the application as encrypted until the live state integration and browser-level tests are complete.
+
+## 10. Updated implementation status — 2026-11-25
+
+The earlier status notes above are historical and are superseded by this section.
+
+### Connected to the application on the security branch
+- `index.html` now loads `vault-runtime.js` and `vault-ui.js`.
+- Startup waits for vault initialization. A first installation presents password setup; an existing encrypted vault presents an unlock screen; a valid legacy `inkly_v1` record is offered for migration.
+- Setup requires a password of at least 12 characters and displays a one-time independent recovery code before the user confirms persistence.
+- The application save path now calls the serialized vault runtime. It no longer writes the library through `localStorage.setItem`.
+- After successful unlock, the legacy plaintext key is removed where browser storage permits. While locked, the application clears its live state reference; the runtime clears its DEK and decrypted data.
+- The UI supports password unlock, recovery-code unlock, and device-key unlock for any pre-existing device-mode vault.
+- An inactivity timer locks the vault after five minutes. A hidden page is also locked after five minutes; returning after the timeout triggers a lock.
+- Import now writes through the encrypted runtime. The ordinary JSON export remains intentionally plaintext and is labelled as unencrypted; encrypted backup export/import is still pending.
+- Delayed book-of-the-day responses and imports are guarded against completing after the vault has been locked.
+
+### Verification
+- GitHub Actions passed on commit `698d265b154e1681c53be5caa3d881ce7daac643`, including 39 Node regression tests. Later commits add plaintext-reference cleanup, background-lock timing hardening, and guards for delayed operations; their workflow results must be checked separately.
+- The tests use Node Web Crypto and a fake IndexedDB adapter. They do not establish real-browser IndexedDB behavior, mobile-browser performance, or full user-interface correctness.
+- No browser end-to-end test has been completed. The branch is not merged or deployed.
+
+### Remaining release gates
+1. Add encrypted backup export/import with a separate backup passphrase, authenticated metadata, validation, and rollback tests.
+2. Verify first-run setup, password/recovery unlock, migration, idle lock, restart, and interrupted writes in real mobile and desktop browsers.
+3. Benchmark PBKDF2 on target mobile devices and decide whether a pinned local Argon2id implementation is practical.
+4. Audit external requests, CSP, script integrity, and third-party dependencies. The book-of-the-day feature currently contacts Google Books for catalogue suggestions; it does not upload the personal library.
+5. Test quota errors, IndexedDB failures, two-tab behavior, corrupted vault records, and backup restore before enabling this on the main branch.
+
+The connected implementation is still a draft. Do not treat it as production-ready until these gates pass.
