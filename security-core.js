@@ -49,37 +49,46 @@
     if(password!==undefined&&password!==null&&password!==''&&(!hasPassword||password.length<12))throw new Error('Пароль должен содержать не менее 12 символов.');
     if(!initialData||typeof initialData!=='object'||Array.isArray(initialData))throw new Error('Начальные данные библиотеки имеют неверный формат.');
     cryptoApi();
-    var dekRaw=randomBytes(32),dek=await importAesKey(dekRaw,true);
-    var passwordWrap=null,deviceWrap=null,deviceKey=null,kdf=null;
-    if(hasPassword){
-      var passwordSalt=randomBytes(16),passwordKey=await derivePasswordKey(password,passwordSalt,PBKDF2_ITERATIONS);
-      passwordWrap=await encryptBytes(passwordKey,dekRaw,'inkly:dek:password:v1');
-      passwordWrap.salt=bytesToBase64(passwordSalt);
-      kdf={name:'PBKDF2-HMAC-SHA-256',iterations:PBKDF2_ITERATIONS};
-    }else{
-      deviceKey=await cryptoApi().subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
-      deviceWrap=await encryptBytes(deviceKey,dekRaw,'inkly:dek:device:v1');
+    var dekRaw=randomBytes(32),recoveryRaw=null,passwordSalt=null,plainBytes=null;
+    try{
+      var dek=await importAesKey(dekRaw,false);
+      var passwordWrap=null,deviceWrap=null,deviceKey=null,kdf=null;
+      if(hasPassword){
+        passwordSalt=randomBytes(16);
+        var passwordKey=await derivePasswordKey(password,passwordSalt,PBKDF2_ITERATIONS);
+        passwordWrap=await encryptBytes(passwordKey,dekRaw,'inkly:dek:password:v1');
+        passwordWrap.salt=bytesToBase64(passwordSalt);
+        kdf={name:'PBKDF2-HMAC-SHA-256',iterations:PBKDF2_ITERATIONS};
+      }else{
+        deviceKey=await cryptoApi().subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+        deviceWrap=await encryptBytes(deviceKey,dekRaw,'inkly:dek:device:v1');
+      }
+      recoveryRaw=randomBytes(32);
+      var recoveryCode=bytesToBase64(recoveryRaw).replace(/=/g,'');
+      var recoveryKey=await importAesKey(recoveryRaw,false);
+      var recoveryWrap=await encryptBytes(recoveryKey,dekRaw,'inkly:dek:recovery:v1');
+      var serialized=JSON.stringify(initialData);
+      if(typeof serialized!=='string')throw new Error('Не удалось сериализовать библиотеку.');
+      plainBytes=encoder.encode(serialized);
+      if(plainBytes.length>50*1024*1024)throw new Error('Размер библиотеки превышает допустимый предел.');
+      var payload=await encryptBytes(dek,plainBytes,'inkly:library:v1');
+      var record={
+        format:FORMAT,
+        version:1,
+        cipher:'AES-256-GCM',
+        kdf:kdf,
+        passwordWrap:passwordWrap?{salt:passwordWrap.salt,iv:passwordWrap.iv,ciphertext:passwordWrap.ciphertext}:null,
+        deviceWrap:deviceWrap,
+        recoveryWrap:{iv:recoveryWrap.iv,ciphertext:recoveryWrap.ciphertext},
+        payload:{iv:payload.iv,ciphertext:payload.ciphertext}
+      };
+      return {record:record,recoveryCode:recoveryCode,deviceKey:deviceKey};
+    }finally{
+      dekRaw.fill(0);
+      if(recoveryRaw)recoveryRaw.fill(0);
+      if(passwordSalt)passwordSalt.fill(0);
+      if(plainBytes)plainBytes.fill(0);
     }
-    var recoveryRaw=randomBytes(32),recoveryCode=bytesToBase64(recoveryRaw).replace(/=/g,'');
-    var recoveryKey=await importAesKey(recoveryRaw,false);
-    var recoveryWrap=await encryptBytes(recoveryKey,dekRaw,'inkly:dek:recovery:v1');
-    var serialized=JSON.stringify(initialData);
-    if(typeof serialized!=='string')throw new Error('Не удалось сериализовать библиотеку.');
-    var plainBytes=encoder.encode(serialized);
-    if(plainBytes.length>50*1024*1024)throw new Error('Размер библиотеки превышает допустимый предел.');
-    var payload=await encryptBytes(dek,plainBytes,'inkly:library:v1');
-    var record={
-      format:FORMAT,
-      version:1,
-      cipher:'AES-256-GCM',
-      kdf:kdf,
-      passwordWrap:passwordWrap?{salt:passwordWrap.salt,iv:passwordWrap.iv,ciphertext:passwordWrap.ciphertext}:null,
-      deviceWrap:deviceWrap,
-      recoveryWrap:{iv:recoveryWrap.iv,ciphertext:recoveryWrap.ciphertext},
-      payload:{iv:payload.iv,ciphertext:payload.ciphertext}
-    };
-    dekRaw.fill(0);recoveryRaw.fill(0);plainBytes.fill(0);
-    return {record:record,recoveryCode:recoveryCode,deviceKey:deviceKey};
   }
   async function unlockWithPassword(record,password){
     validateRecord(record);
