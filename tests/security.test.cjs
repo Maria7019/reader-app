@@ -124,6 +124,7 @@ test('vault metadata validation rejects weak KDF settings', () => {
   };
   assert.equal(securityCore.validateRecord(valid), true);
   assert.throws(() => securityCore.validateRecord({ ...valid, kdf: { name: 'PBKDF2-HMAC-SHA-256', iterations: 1000 } }));
+  assert.throws(() => securityCore.validateRecord({ ...valid, kdf: { name: 'PBKDF2-HMAC-SHA-256', iterations: '600000' } }));
   assert.throws(() => securityCore.validateRecord({ ...valid, kdf: { name: 'SHA-256', iterations: 600000 } }));
   assert.throws(() => securityCore.validateRecord({ ...valid, cipher: 'AES-CBC' }));
 });
