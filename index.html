@@ -361,6 +361,7 @@ v.innerHTML=`
   <div class="profile-data-actions"><button class="btn small" type="button" onclick="exportBackup()">Скачать копию</button><button class="btn light small" type="button" onclick="document.getElementById('backup-file').click()">Восстановить копию</button><input id="backup-file" type="file" accept=".json,application/json" style="display:none" onchange="importBackup(event)"></div>
   <p class="profile-data-note">Копия содержит вашу библиотеку и заметки. Резервная копия шифруется отдельным паролем. Храните пароль отдельно от файла. Старые незашифрованные JSON-копии также можно импортировать.</p>
 </div>
+<div class="profile-section-title">Безопасность</div><div class="profile-panel"><p>Библиотека хранится в зашифрованном виде. После пяти минут бездействия Inkly блокируется автоматически.</p><button class="btn light small" type="button" onclick="InklyVaultUI.lock()">Заблокировать библиотеку сейчас</button></div>
 <div class="profile-logout">Выйти из аккаунта</div>`;
 }
 }
