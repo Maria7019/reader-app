@@ -12,7 +12,7 @@
     var crypto=options.crypto||root.InklySecurityCore;
     if(!store||!crypto)throw new Error('Модули защищённого хранилища Inkly не загружены.');
 
-    var record=null,deviceKey=null,data=null,dek=null,status='new',writeQueue=Promise.resolve(),pendingSetup=null,lockRequested=false;
+    var record=null,deviceKey=null,data=null,dek=null,status='new',writeQueue=Promise.resolve(),pendingSetup=null,lockRequested=false,writeError=null;
 
     function requireUnlocked(){
       if(status!=='unlocked'||!dek||!data)throw new Error('Сначала разблокируйте защищённую библиотеку.');
@@ -101,9 +101,10 @@
         await store.writeVault(updated,deviceKey);
         record=updated;
         data=snapshot;
+        writeError=null;
         return true;
       });
-      writeQueue=operation.catch(function(){});
+      writeQueue=operation.catch(function(error){writeError=error});
       return operation;
     }
 
@@ -111,7 +112,7 @@
       if(status!=='unlocked')return {status:status};
       if(lockRequested)return writeQueue.then(function(){return {status:status}});
       lockRequested=true;
-      var operation=writeQueue.then(function(){dek=null;data=null;status=record?'locked':status;lockRequested=false;return {status:status}});
+      var operation=writeQueue.then(function(){if(writeError){lockRequested=false;throw new Error('Не удалось сохранить последние изменения. Библиотека оставлена разблокированной, чтобы вы могли повторить сохранение.')}dek=null;data=null;status=record?'locked':status;lockRequested=false;return {status:status}});
       writeQueue=operation.catch(function(){lockRequested=false});
       return operation;
     }
