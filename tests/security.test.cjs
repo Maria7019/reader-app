@@ -273,3 +273,12 @@ test('IndexedDB adapter rejects invalid device-key combinations', async () => {
   const deviceVault = await securityCore.createVault({ books: [], disciplines: [] }, null);
   await assert.rejects(indexedStore.writeVault(deviceVault.record, null));
 });
+
+
+test('IndexedDB adapter refuses a device vault whose local key is missing', async () => {
+  const created = await securityCore.createVault({ books: [], disciplines: [] }, null);
+  await indexedStore.writeVault(created.record, created.deviceKey);
+  const db = globalThis.indexedDB.databases.get(indexedStore.databaseName);
+  db.stores.get('vaults').set('active', { id: 'active', record: created.record, deviceKey: null });
+  await assert.rejects(indexedStore.readVault(), /отсутствует действительный ключ устройства/);
+});
