@@ -417,3 +417,29 @@ test('vault UI presents recovery credentials and applies a five-minute inactivit
   assert.match(vaultUiSource, /5\*60\*1000/);
   assert.match(vaultUiSource, /unlockWithRecoveryCode/);
 });
+
+
+test('encrypted backup round-trips without exposing library text in the envelope', async () => {
+  const data = { books: [{ title: 'private backup title', notes: ['private backup note'] }], disciplines: ['Литература'] };
+  const envelope = await securityCore.encryptBackup(data, 'a separate backup password');
+  assert.equal(envelope.format, 'inkly-encrypted-backup');
+  assert.equal(JSON.stringify(envelope).includes('private backup note'), false);
+  assert.deepEqual(await securityCore.decryptBackup(envelope, 'a separate backup password'), data);
+});
+
+test('encrypted backup rejects incorrect passphrases and modified ciphertext', async () => {
+  const envelope = await securityCore.encryptBackup({ books: [], disciplines: [] }, 'a separate backup password');
+  await assert.rejects(securityCore.decryptBackup(envelope, 'an incorrect backup password'));
+  const changed = structuredClone(envelope);
+  const bytes = Buffer.from(changed.ciphertext, 'base64');
+  bytes[bytes.length - 1] ^= 1;
+  changed.ciphertext = bytes.toString('base64');
+  await assert.rejects(securityCore.decryptBackup(changed, 'a separate backup password'));
+});
+
+test('encrypted backup validates KDF metadata, sizes, and decrypted root structure', async () => {
+  const envelope = await securityCore.encryptBackup({ books: [], disciplines: [] }, 'a separate backup password');
+  await assert.rejects(securityCore.decryptBackup({ ...envelope, kdf: { name: 'PBKDF2-HMAC-SHA-256', iterations: 1000 } }, 'a separate backup password'));
+  await assert.rejects(securityCore.encryptBackup({ books: [], disciplines: [] }, 'short'));
+  await assert.rejects(securityCore.decryptBackup({ ...envelope, format: 'unknown' }, 'a separate backup password'));
+});
