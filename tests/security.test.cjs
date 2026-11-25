@@ -469,3 +469,7 @@ test('vault runtime refuses to discard in-memory data after a failed write and a
   await runtime.lock();
   assert.equal(runtime.getStatus(), 'locked');
 });
+
+test('profile exposes a manual lock control for the encrypted vault', () => {
+  assert.match(source, /InklyVaultUI\.lock\(\)/);
+});
