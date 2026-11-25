@@ -57,3 +57,23 @@ This is a read-only baseline review of the current `main` version. No applicatio
 ## Current status
 
 Audit baseline recorded. No runtime behavior has been modified yet. The next implementation change should be isolated on this branch and should not be merged into `main` until the migration and backup test plan passes.
+
+
+## Implementation progress (draft branch)
+
+### Completed in the draft branch
+- Added a startup guard: when the existing `inkly_v1` value cannot be read or parsed, normal startup/save is stopped. The user is offered a download of the raw stored value instead of silently falling back and writing sample data.
+- Added working ordinary JSON export and restore controls in the profile's Data section.
+- New exports use a versioned envelope (`format: inkly-backup`, `version: 1`) while the importer remains compatible with legacy plain-state JSON backups.
+- Import rejects unsupported versions, missing required arrays, malformed book records and nested note/quote/character fields, invalid category entries, malformed profile/maps, excessive counts, and files larger than 25 MiB.
+- Before replacement, the user sees a summary and confirmation. The current state is downloaded as a separate pre-import backup. If persistence fails, the in-memory state is reverted and the previous raw storage value is restored where possible.
+- The inline JavaScript passed a syntax compilation check. Validator checks passed for both supported formats and rejected the tested malformed/unsupported cases.
+
+### Not yet verified
+- Actual interaction and downloads in desktop/mobile browsers.
+- Interrupted downloads, quota exhaustion and storage-denied behavior in a real browser.
+- End-to-end restore against a representative populated user library.
+- Cryptographic protection and encrypted backup format.
+- IndexedDB migration.
+
+The branch remains a draft and must not be merged into `main` until browser testing and the migration plan are complete.
