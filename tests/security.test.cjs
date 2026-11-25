@@ -132,7 +132,7 @@ test('only a same-origin local security script is loaded', () => {
   assert.match(html, /<script src="\.\/indexeddb-store\.js"><\/script>/);
 });
 
-const validatorStart = source.indexOf('function validateBackupObject(value){');
+const validatorStart = source.indexOf('function validateBackupTree(root){');
 const validatorEnd = source.indexOf('function importBackup(e)', validatorStart);
 assert.notEqual(validatorStart, -1, 'backup validator must exist');
 assert.notEqual(validatorEnd, -1, 'backup importer must follow the validator');
@@ -556,4 +556,23 @@ test('base64 decoder continues to accept the unpadded 32-byte recovery credentia
   const created = await securityCore.createVault({ books: [], disciplines: [] }, 'correct horse battery staple');
   const key = await securityCore.unlockWithRecoveryCode(created.record, created.recoveryCode);
   assert.deepEqual(await securityCore.decryptLibrary(created.record, key), { books: [], disciplines: [] });
+});
+
+
+test('backup validator rejects prototype-pollution property names', () => {
+  const polluted = JSON.parse('{"books":[],"disciplines":[],"__proto__":{"polluted":true}}');
+  assert.throws(() => validateBackupObject(polluted), /недопустимое имя поля/);
+  assert.equal({}.polluted, undefined);
+});
+
+test('backup validator rejects excessive nesting and oversized text fields', () => {
+  let nested = {};
+  for (let i = 0; i < 42; i++) nested = { child: nested };
+  assert.throws(() => validateBackupObject({ books: [], disciplines: [], extra: nested }), /глубина вложенности/);
+  assert.throws(() => validateBackupObject({ books: [], disciplines: [], extra: 'x'.repeat(2 * 1024 * 1024 + 1) }), /слишком длинная/);
+});
+
+test('backup validator caps total object-node count', () => {
+  const items = Array.from({ length: 200001 }, () => null);
+  assert.throws(() => validateBackupObject({ books: [], disciplines: [], extra: items }), /слишком сложную структуру/);
 });
