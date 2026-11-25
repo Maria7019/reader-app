@@ -72,7 +72,7 @@ assert.notEqual(coverHelperStart, -1, 'cover URL sanitizer must exist');
 assert.notEqual(coverHelperEnd, -1, 'cover URL sanitizer must precede book rendering');
 const safeCoverCss = new Function('location', source.slice(coverHelperStart, coverHelperEnd) + '; return safeCoverCss;')({ href: 'https://inkly.example/', origin: 'https://inkly.example' });
 
-const bookIdArgMatch = source.match(/function bookIdArg\\(id\\)\\{[\\s\\S]*?\\}/);
+const bookIdArgMatch = source.match(/function bookIdArg\(id\)\{[\s\S]*?\}/);
 assert.ok(bookIdArgMatch, 'book IDs must pass through a dedicated JavaScript/HTML argument encoder');
 const bookIdArg = new Function(bookIdArgMatch[0] + '; return bookIdArg;')();
 
@@ -83,7 +83,7 @@ test('book IDs are encoded safely before insertion into inline event handlers', 
   assert.equal(encoded.includes('"'), false);
   assert.equal(encoded.includes("'"), false);
   assert.match(source, /onclick="openBook\('+bookIdArg\(b\.id\)\+'\)/);
-  assert.doesNotMatch(source, /onclick="(?:openBook|bookForm|deleteBook)\\(\\'\+b\\.id/);
+  assert.doesNotMatch(source, /onclick="(?:openBook|bookForm|deleteBook)\('\+b\.id/);
 });
 
 test('cover URL rendering rejects executable and non-HTTP schemes', () => {
