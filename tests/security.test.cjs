@@ -65,6 +65,32 @@ const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/i);
 assert.ok(scriptMatch, 'the application must contain its inline script');
 const source = scriptMatch[1];
 
+
+const coverHelperStart = source.indexOf('function safeCoverCss(value){');
+const coverHelperEnd = source.indexOf('function bookCover(b,extra)', coverHelperStart);
+assert.notEqual(coverHelperStart, -1, 'cover URL sanitizer must exist');
+assert.notEqual(coverHelperEnd, -1, 'cover URL sanitizer must precede book rendering');
+const safeCoverCss = new Function('location', source.slice(coverHelperStart, coverHelperEnd) + '; return safeCoverCss;')({ href: 'https://inkly.example/', origin: 'https://inkly.example' });
+
+test('cover URL rendering rejects executable and non-HTTP schemes', () => {
+  assert.equal(safeCoverCss('javascript:alert(1)'), 'background-color:#9b896d');
+  assert.equal(safeCoverCss('data:text/html,<svg onload=alert(1)>'), 'background-color:#9b896d');
+});
+
+test('cover URL rendering safely encodes hostile URL characters before HTML insertion', () => {
+  const style = safeCoverCss('https://covers.example/image.jpg?x=1&y=2%22%20onerror%3Dalert(1)');
+  assert.match(style, /^background-color:#9b896d;background-image:/);
+  assert.match(style, /&amp;/);
+  assert.match(style, /&quot;/);
+  assert.doesNotMatch(style, / onerror=/i);
+  assert.equal(safeCoverCss('http://external.example/image.jpg'), 'background-color:#9b896d');
+});
+
+test('book cover renderers no longer interpolate raw JSON strings into style attributes', () => {
+  assert.doesNotMatch(source, /JSON\.stringify\(b\.cover\)/);
+  assert.equal((source.match(/safeCoverCss\(b\.cover\)/g) || []).length, 3);
+});
+
 test('the complete inline application script parses', () => {
   assert.doesNotThrow(() => new Function(source));
 });
