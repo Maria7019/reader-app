@@ -116,6 +116,7 @@
       return operation;
     }
 
+    function flush(){return writeQueue}
     function getStatus(){return status}
     function getRecordMetadata(){
       if(!record)return null;
@@ -132,6 +133,7 @@
       unlockWithDevice:unlockWithDevice,
       getData:getData,
       save:save,
+      flush:flush,
       lock:lock,
       getStatus:getStatus,
       getRecordMetadata:getRecordMetadata
