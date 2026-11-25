@@ -141,3 +141,8 @@ The current branch revision is `7568424c0436f3beb0f903ffda9c1c4339060ab6`. Both 
 ## Follow-up review — 2026-11-26 (encoded input bounds)
 
 A further defensive check now rejects base64-encoded vault fields larger than the implementation's supported 50 MiB decoded payload envelope before calling `atob`, preventing an arbitrarily large local record from forcing an unbounded decode allocation. The 32-byte unpadded recovery credential remains accepted. Two regression tests cover the oversized-input rejection and recovery-key compatibility. The current source contains 52 Node regression tests. The latest run's test step has completed successfully; the overall workflow is still finishing its cleanup steps. This remains Node-level verification, not real-browser testing.
+
+
+## Follow-up review — 2026-11-26 (backup import hardening)
+
+Backup validation now recursively inspects the parsed import tree before applying it. It rejects prototype-sensitive property names (`__proto__`, `prototype`, `constructor`), excessive nesting (over 40 levels), strings over 2 MiB, and structures exceeding 200,000 visited nodes. This reduces prototype-pollution and resource-exhaustion risks in imported data. Three adversarial regression tests were added. The current suite contains 55 Node tests; both latest GitHub Actions runs for the implementation commit completed successfully. This does not replace browser-level backup/restore testing.
