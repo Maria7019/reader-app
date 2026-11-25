@@ -86,7 +86,10 @@ test('book IDs are encoded safely before insertion into inline event handlers', 
   assert.equal(encoded, '&quot;x&#39;);alert(document.domain);//&quot;');
   assert.equal(encoded.includes('"'), false);
   assert.equal(encoded.includes("'"), false);
-  assert.match(source, /onclick="openBook\('+bookIdArg\(b\.id\)\+'\)/);
+  assert.ok(source.includes('onclick="openBook(\'+bookIdArg(b.id)+\')"'));
+  assert.ok(source.includes('onclick="bookForm(\'+bookIdArg(b.id)+\')"'));
+  assert.ok(source.includes('onclick="deleteBook(\'+bookIdArg(b.id)+\')"'));
+  assert.ok(source.includes('onclick="openBook(\'+bookIdArg(b.id)+\');detailTab='));
   assert.doesNotMatch(source, /onclick="(?:openBook|bookForm|deleteBook)\('\+b\.id/);
 });
 
