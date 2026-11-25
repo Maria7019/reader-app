@@ -15,7 +15,7 @@
     return btoa(binary);
   }
   function base64ToBytes(value){
-    if(typeof value!=='string'||!/^[A-Za-z0-9+/]*={0,2}$/.test(value))throw new Error('Некорректные двоичные данные.');
+    if(typeof value!=='string'||value.length>70*1024*1024||!/^[A-Za-z0-9+/]*={0,2}$/.test(value))throw new Error('Некорректные двоичные данные.');
     var binary=atob(value),out=new Uint8Array(binary.length);
     for(var i=0;i<binary.length;i++)out[i]=binary.charCodeAt(i);
     return out;
