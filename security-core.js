@@ -97,7 +97,7 @@
   }
   function validateRecord(record){
     if(!record||typeof record!=='object'||record.format!==FORMAT||record.version!==1||record.cipher!=='AES-256-GCM')throw new Error('Формат или алгоритм защищённого хранилища не поддерживается.');
-    if(!record.kdf||record.kdf.name!=='PBKDF2-HMAC-SHA-256'||record.kdf.iterations<600000||record.kdf.iterations>2000000)throw new Error('Параметры защиты пароля некорректны.');
+    if(!record.kdf||record.kdf.name!=='PBKDF2-HMAC-SHA-256'||!Number.isSafeInteger(record.kdf.iterations)||record.kdf.iterations<600000||record.kdf.iterations>2000000)throw new Error('Параметры защиты пароля некорректны.');
     ['passwordWrap','recoveryWrap','payload'].forEach(function(k){
       var x=record[k];if(!x||typeof x.iv!=='string'||typeof x.ciphertext!=='string')throw new Error('Запись защищённого хранилища неполная.');
       if(base64ToBytes(x.iv).length!==12||base64ToBytes(x.ciphertext).length<16)throw new Error('Запись защищённого хранилища повреждена.');
