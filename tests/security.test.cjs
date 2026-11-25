@@ -482,3 +482,12 @@ test('application sets a restrictive same-origin CSP and suppresses referrer hea
   assert.match(html, /connect-src 'self' https:\/\/www\.googleapis\.com/);
   assert.match(html, /name="referrer" content="no-referrer"/);
 });
+
+
+test('vault UI uses the Web Locks API to prevent parallel unlocked sessions where supported', () => {
+  assert.match(vaultUiSource, /navigator\.locks\.request\('inkly-vault-session'/);
+  assert.match(vaultUiSource, /ifAvailable:true/);
+  assert.match(vaultUiSource, /function releaseSessionLock\(\)/);
+  assert.match(vaultUiSource, /releaseSessionLock\(\);\s*if\(typeof callbacks\.onLock/);
+  assert.match(vaultUiSource, /Открывайте библиотеку в одной вкладке/);
+});
