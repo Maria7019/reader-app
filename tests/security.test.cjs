@@ -124,4 +124,17 @@ test('vault metadata validation rejects weak KDF settings', () => {
   assert.equal(securityCore.validateRecord(valid), true);
   assert.throws(() => securityCore.validateRecord({ ...valid, kdf: { name: 'PBKDF2-HMAC-SHA-256', iterations: 1000 } }));
   assert.throws(() => securityCore.validateRecord({ ...valid, kdf: { name: 'SHA-256', iterations: 600000 } }));
+  assert.throws(() => securityCore.validateRecord({ ...valid, cipher: 'AES-CBC' }));
+});
+
+
+test('a vault uses separate random nonces for each AES-GCM operation', async () => {
+  const created = await securityCore.createVault({ books: [], disciplines: [] }, 'correct horse battery staple');
+  const nonces = [
+    created.record.passwordWrap.iv,
+    created.record.recoveryWrap.iv,
+    created.record.payload.iv
+  ];
+  assert.equal(new Set(nonces).size, 3);
+  assert.ok(nonces.every(value => Buffer.from(value, 'base64').length === 12));
 });
