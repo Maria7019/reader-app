@@ -122,4 +122,4 @@ Outstanding release gates: verify the 44-test revision in CI; perform real-brows
 
 The vault UI now uses the browser Web Locks API to request an exclusive `inkly-vault-session` lock before password, recovery-key, or device-key unlock. A second tab is refused while another tab owns the session lock. The lock is released after a successful manual or inactivity lock. If Web Locks is unavailable, the UI warns the user to keep Inkly in one tab; no cross-browser fallback lease is implemented. Static tests cover the guard's presence, but real multi-tab contention and tab-close behavior still need browser testing.
 
-The current test source contains 46 Node regression tests. The most recent successful workflow confirmed in this session is still the earlier 39-test run; the current 46-test branch head requires a fresh successful CI run before its tests can be called verified.
+The current test source contains 46 Node regression tests. GitHub Actions run `45626510855` completed successfully on the current 46-test revision; the regression-test job passed. This verifies the Node test suite, not real-browser behavior.
