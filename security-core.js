@@ -94,8 +94,10 @@
     validateRecord(record);
     if(!data||typeof data!=='object'||Array.isArray(data))throw new Error('Данные библиотеки имеют неверный формат.');
     var serialized=JSON.stringify(data);
-    if(typeof serialized!=='string'||serialized.length>50*1024*1024)throw new Error('Размер библиотеки превышает допустимый предел.');
-    var payload=await encryptBytes(key,encoder.encode(serialized),'inkly:library:v1');
+    if(typeof serialized!=='string')throw new Error('Не удалось сериализовать библиотеку.');
+    var plainBytes=encoder.encode(serialized);
+    if(plainBytes.length>50*1024*1024)throw new Error('Размер библиотеки превышает допустимый предел.');
+    var payload=await encryptBytes(key,plainBytes,'inkly:library:v1');
     return Object.assign({},record,{payload:payload});
   }
   function validateRecord(record){
