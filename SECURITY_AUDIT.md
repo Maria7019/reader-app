@@ -87,7 +87,7 @@ The branch remains a draft and must not be merged into `main` until browser test
 
 ### Regression checks
 - Added a dependency-free Node.js test suite and GitHub Actions workflow.
-- Latest CI run `45619365887` completed successfully: 18 tests passed, 0 failed. This includes crypto round-trip, wrong-secret rejection, authenticated-tamper detection, nonce uniqueness, and KDF metadata validation.
+- Latest CI run `45619583393` completed successfully: 21 tests passed, 0 failed. This includes crypto round-trips, wrong-secret rejection, authenticated-tamper detection, nonce uniqueness, KDF metadata validation, plaintext-exclusion checks, update encryption, and payload-size validation.
 - Checks cover inline-script syntax, empty first-run library, corrupt-storage startup guard, absence of third-party script tags, legacy/versioned backup validation, malformed records, invalid metadata, and count limits.
 - These are static/logic regression checks, not a substitute for real browser interaction tests on Android and desktop.
 
