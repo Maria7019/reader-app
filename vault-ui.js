@@ -80,7 +80,7 @@
       if(idleTimer)clearTimeout(idleTimer);
       if(typeof callbacks.onLock==='function')callbacks.onLock();
       showUnlock('Сеанс завершён после пяти минут бездействия.');
-    }catch(e){if(typeof callbacks.onError==='function')callbacks.onError(e)}
+    }catch(e){if(typeof callbacks.onLockFailure==='function')callbacks.onLockFailure(e);else if(typeof callbacks.onError==='function')callbacks.onError(e)}
   }
   function activity(){
     if(!runtime||runtime.getStatus()!=='unlocked'||document.hidden)return;
