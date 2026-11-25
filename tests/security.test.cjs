@@ -140,3 +140,29 @@ test('a vault uses separate random nonces for each AES-GCM operation', async () 
   assert.equal(new Set(nonces).size, 3);
   assert.ok(nonces.every(value => Buffer.from(value, 'base64').length === 12));
 });
+
+
+test('encrypted library updates round-trip and receive a fresh nonce', async () => {
+  const original = { books: [], disciplines: ['Литература'] };
+  const created = await securityCore.createVault(original, 'correct horse battery staple');
+  const key = await securityCore.unlockWithPassword(created.record, 'correct horse battery staple');
+  const updatedData = { books: [{ title: 'Test book', notes: ['private note'] }], disciplines: ['Литература'] };
+  const updatedRecord = await securityCore.encryptLibrary(created.record, key, updatedData);
+  assert.notEqual(updatedRecord.payload.iv, created.record.payload.iv);
+  assert.deepEqual(await securityCore.decryptLibrary(updatedRecord, key), updatedData);
+});
+
+test('vault records do not contain plaintext library data or recovery code', async () => {
+  const privateText = 'private library phrase 9f3a';
+  const created = await securityCore.createVault({ books: [{ title: privateText }], disciplines: [] }, 'correct horse battery staple');
+  const serialized = JSON.stringify(created.record);
+  assert.equal(serialized.includes(privateText), false);
+  assert.equal(serialized.includes(created.recoveryCode), false);
+});
+
+test('rejects non-object and oversized library updates before encryption', async () => {
+  const created = await securityCore.createVault({ books: [], disciplines: [] }, 'correct horse battery staple');
+  const key = await securityCore.unlockWithPassword(created.record, 'correct horse battery staple');
+  await assert.rejects(securityCore.encryptLibrary(created.record, key, null));
+  await assert.rejects(securityCore.encryptLibrary(created.record, key, 'not an object'));
+});
