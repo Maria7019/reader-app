@@ -123,3 +123,10 @@ Outstanding release gates: verify the 44-test revision in CI; perform real-brows
 The vault UI now uses the browser Web Locks API to request an exclusive `inkly-vault-session` lock before password, recovery-key, or device-key unlock. A second tab is refused while another tab owns the session lock. The lock is released after a successful manual or inactivity lock. If Web Locks is unavailable, the UI warns the user to keep Inkly in one tab; no cross-browser fallback lease is implemented. Static tests cover the guard's presence, but real multi-tab contention and tab-close behavior still need browser testing.
 
 The current test source contains 46 Node regression tests. GitHub Actions run `45626510855` completed successfully on the current 46-test revision; the regression-test job passed. This verifies the Node test suite, not real-browser behavior.
+
+
+## Follow-up review — 2026-11-26
+
+A further review of the draft implementation identified an unsafe rendering path for user-supplied book-cover URLs. The URL had been interpolated into an HTML style attribute using JSON stringification; JSON stringification alone is not HTML-attribute or CSS-context escaping. The three affected cover renderers now pass values through a shared sanitizer. It accepts HTTPS URLs and same-origin URLs, rejects other schemes and external HTTP URLs, and HTML-escapes attribute-sensitive characters before inserting the CSS value. Regression tests cover executable schemes, external HTTP, ampersands, encoded quote/attribute payloads, and all three render paths.
+
+The follow-up change is on `security/audit-baseline` only. GitHub Actions run 147 passed on commit `bb77e7578e41bbed03a6078885f8c5d1c4c53774`; the test suite now includes 49 Node regression tests. This is still source-level and Node-level verification. It does not establish that the sanitizer, CSP, vault lifecycle, IndexedDB, or user interface behave correctly in a real browser. The existing inline event-handler architecture also means the CSP still permits `'unsafe-inline'`; removing that exception requires a separate event-handler refactor.
