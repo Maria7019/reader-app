@@ -6,6 +6,60 @@ const { webcrypto } = require('node:crypto');
 globalThis.crypto = webcrypto;
 const securityCore = require('../security-core.js');
 
+class FakeIDBFactory {
+  constructor() { this.databases = new Map(); }
+  open(name) {
+    const request = {};
+    queueMicrotask(() => {
+      let db = this.databases.get(name);
+      const fresh = !db;
+      if (!db) { db = new FakeIDBDatabase(); this.databases.set(name, db); }
+      request.result = db;
+      if (fresh && request.onupgradeneeded) request.onupgradeneeded();
+      if (request.onsuccess) request.onsuccess();
+    });
+    return request;
+  }
+}
+class FakeIDBDatabase {
+  constructor() { this.stores = new Map(); this.objectStoreNames = { contains: name => this.stores.has(name) }; }
+  createObjectStore(name) { this.stores.set(name, new Map()); }
+  transaction(name) {
+    const db = this;
+    const tx = { pending: 0, finished: false, listeners: {},
+      addEventListener(type, fn) { (this.listeners[type] ||= []).push(fn); },
+      objectStore(storeName) {
+        const map = db.stores.get(storeName);
+        const request = action => {
+          const req = {};
+          tx.pending++;
+          queueMicrotask(() => {
+            try { req.result = action(); if (req.onsuccess) req.onsuccess(); }
+            catch (error) { req.error = error; if (req.onerror) req.onerror(); tx.error = error; if (tx.onerror) tx.onerror(); }
+            tx.pending--;
+            if (tx.pending === 0) queueMicrotask(() => {
+              if (tx.finished) return;
+              tx.finished = true;
+              if (tx.oncomplete) tx.oncomplete();
+              (tx.listeners.complete || []).forEach(fn => fn());
+            });
+          });
+          return req;
+        };
+        return {
+          put(value) { return request(() => { map.set(value.id, structuredClone(value)); return value.id; }); },
+          get(key) { return request(() => map.has(key) ? structuredClone(map.get(key)) : undefined); },
+          delete(key) { return request(() => map.delete(key)); }
+        };
+      }
+    };
+    return tx;
+  }
+  close() {}
+}
+globalThis.indexedDB = new FakeIDBFactory();
+const indexedStore = require('../indexeddb-store.js');
+
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/i);
 assert.ok(scriptMatch, 'the application must contain its inline script');
@@ -27,6 +81,7 @@ test('unreadable storage stops normal startup and does not autosave defaults', (
 test('only a same-origin local security script is loaded', () => {
   assert.doesNotMatch(html, /<script\b[^>]*\bsrc\s*=\s*["']https?:/i);
   assert.match(html, /<script src="\.\/security-core\.js"><\/script>/);
+  assert.match(html, /<script src="\.\/indexeddb-store\.js"><\/script>/);
 });
 
 const validatorStart = source.indexOf('function validateBackupObject(value){');
@@ -188,4 +243,33 @@ test('device mode rejects an unrelated local key', async () => {
 
 test('password mode rejects short passwords before creating a vault', async () => {
   await assert.rejects(securityCore.createVault({ books: [], disciplines: [] }, 'short'));
+});
+
+
+test('IndexedDB adapter writes and reads a password-protected vault', async () => {
+  const data = { books: [{ title: 'Stored privately' }], disciplines: [] };
+  const created = await securityCore.createVault(data, 'correct horse battery staple');
+  assert.equal(await indexedStore.writeVault(created.record, null), true);
+  const saved = await indexedStore.readVault();
+  const key = await securityCore.unlockWithPassword(saved.record, 'correct horse battery staple');
+  assert.deepEqual(await securityCore.decryptLibrary(saved.record, key), data);
+  assert.equal(saved.deviceKey, null);
+});
+
+test('IndexedDB adapter stores the non-extractable device key separately for no-password mode', async () => {
+  const data = { books: [{ title: 'Device mode' }], disciplines: [] };
+  const created = await securityCore.createVault(data, null);
+  assert.equal(await indexedStore.probeCryptoKeyStorage(created.deviceKey), true);
+  assert.equal(await indexedStore.writeVault(created.record, created.deviceKey), true);
+  const saved = await indexedStore.readVault();
+  assert.equal(saved.deviceKey.extractable, false);
+  const key = await securityCore.unlockWithDeviceKey(saved.record, saved.deviceKey);
+  assert.deepEqual(await securityCore.decryptLibrary(saved.record, key), data);
+});
+
+test('IndexedDB adapter rejects invalid device-key combinations', async () => {
+  const passwordVault = await securityCore.createVault({ books: [], disciplines: [] }, 'correct horse battery staple');
+  await assert.rejects(indexedStore.writeVault(passwordVault.record, passwordVault.deviceKey || {}));
+  const deviceVault = await securityCore.createVault({ books: [], disciplines: [] }, null);
+  await assert.rejects(indexedStore.writeVault(deviceVault.record, null));
 });
