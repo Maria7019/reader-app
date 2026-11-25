@@ -51,7 +51,7 @@
     var passwordSalt=randomBytes(16),passwordKey=await derivePasswordKey(password,passwordSalt,PBKDF2_ITERATIONS);
     var passwordWrap=await encryptBytes(passwordKey,dekRaw,'inkly:dek:password:v1');
     var recoveryRaw=randomBytes(32),recoveryCode=bytesToBase64(recoveryRaw).replace(/=/g,'');
-    var recoverySalt=randomBytes(16),recoveryKey=await importAesKey(recoveryRaw,false);
+    var recoveryKey=await importAesKey(recoveryRaw,false);
     var recoveryWrap=await encryptBytes(recoveryKey,dekRaw,'inkly:dek:recovery:v1');
     var payload=await encryptBytes(dek,encoder.encode(JSON.stringify(initialData)),'inkly:library:v1');
     var record={
@@ -102,7 +102,7 @@
       var x=record[k];if(!x||typeof x.iv!=='string'||typeof x.ciphertext!=='string')throw new Error('Запись защищённого хранилища неполная.');
       if(base64ToBytes(x.iv).length!==12||base64ToBytes(x.ciphertext).length<16)throw new Error('Запись защищённого хранилища повреждена.');
     });
-    if(base64ToBytes(record.passwordWrap.salt).length!==16||base64ToBytes(record.recoveryWrap.salt).length!==16)throw new Error('Соль защищённого хранилища повреждена.');
+    if(base64ToBytes(record.passwordWrap.salt).length!==16)throw new Error('Соль защищённого хранилища повреждена.');
     return true;
   }
   root.InklySecurityCore=Object.freeze({
