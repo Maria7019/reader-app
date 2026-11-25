@@ -168,3 +168,8 @@ The earlier status notes above are historical and are superseded by this section
 5. Test quota errors, IndexedDB failures, two-tab behavior, corrupted vault records, and backup restore before enabling this on the main branch.
 
 The connected implementation is still a draft. Do not treat it as production-ready until these gates pass.
+
+### Encrypted backup status update
+Encrypted backup export/import is now implemented in the draft branch. The backup envelope uses a separate user-chosen passphrase (minimum 12 characters), PBKDF2-HMAC-SHA-256 with 600,000 iterations, a fresh 16-byte salt, and AES-256-GCM with a fresh 96-bit nonce and authenticated context. The envelope contains no plaintext library content. Import verifies the encrypted envelope, decrypts it, validates the library structure, previews record counts, asks for replacement confirmation, and writes through the encrypted vault runtime. Legacy plaintext JSON backups remain importable for compatibility; new exports are encrypted. The backup passphrase is not stored by Inkly.
+
+The app currently enforces a 25 MiB file-size limit on import, while the cryptographic backup module has a 50 MiB payload ceiling. PBKDF2 performance still needs testing on target phones. Browser-level verification remains outstanding.
