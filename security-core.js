@@ -45,32 +45,55 @@
     return cryptoApi().subtle.deriveKey({name:'PBKDF2',hash:'SHA-256',salt:salt,iterations:iterations},material,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
   }
   async function createVault(initialData,password){
-    if(typeof password!=='string'||password.length<12)throw new Error('Пароль должен содержать не менее 12 символов.');
+    var hasPassword=typeof password==='string'&&password.length>0;
+    if(password!==undefined&&password!==null&&password!==''&&(!hasPassword||password.length<12))throw new Error('Пароль должен содержать не менее 12 символов.');
+    if(!initialData||typeof initialData!=='object'||Array.isArray(initialData))throw new Error('Начальные данные библиотеки имеют неверный формат.');
     cryptoApi();
     var dekRaw=randomBytes(32),dek=await importAesKey(dekRaw,true);
-    var passwordSalt=randomBytes(16),passwordKey=await derivePasswordKey(password,passwordSalt,PBKDF2_ITERATIONS);
-    var passwordWrap=await encryptBytes(passwordKey,dekRaw,'inkly:dek:password:v1');
+    var passwordWrap=null,deviceWrap=null,deviceKey=null,kdf=null;
+    if(hasPassword){
+      var passwordSalt=randomBytes(16),passwordKey=await derivePasswordKey(password,passwordSalt,PBKDF2_ITERATIONS);
+      passwordWrap=await encryptBytes(passwordKey,dekRaw,'inkly:dek:password:v1');
+      passwordWrap.salt=bytesToBase64(passwordSalt);
+      kdf={name:'PBKDF2-HMAC-SHA-256',iterations:PBKDF2_ITERATIONS};
+    }else{
+      deviceKey=await cryptoApi().subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+      deviceWrap=await encryptBytes(deviceKey,dekRaw,'inkly:dek:device:v1');
+    }
     var recoveryRaw=randomBytes(32),recoveryCode=bytesToBase64(recoveryRaw).replace(/=/g,'');
     var recoveryKey=await importAesKey(recoveryRaw,false);
     var recoveryWrap=await encryptBytes(recoveryKey,dekRaw,'inkly:dek:recovery:v1');
-    var payload=await encryptBytes(dek,encoder.encode(JSON.stringify(initialData)),'inkly:library:v1');
+    var serialized=JSON.stringify(initialData);
+    if(typeof serialized!=='string')throw new Error('Не удалось сериализовать библиотеку.');
+    var plainBytes=encoder.encode(serialized);
+    if(plainBytes.length>50*1024*1024)throw new Error('Размер библиотеки превышает допустимый предел.');
+    var payload=await encryptBytes(dek,plainBytes,'inkly:library:v1');
     var record={
       format:FORMAT,
       version:1,
       cipher:'AES-256-GCM',
-      kdf:{name:'PBKDF2-HMAC-SHA-256',iterations:PBKDF2_ITERATIONS},
-      passwordWrap:{salt:bytesToBase64(passwordSalt),iv:passwordWrap.iv,ciphertext:passwordWrap.ciphertext},
+      kdf:kdf,
+      passwordWrap:passwordWrap?{salt:passwordWrap.salt,iv:passwordWrap.iv,ciphertext:passwordWrap.ciphertext}:null,
+      deviceWrap:deviceWrap,
       recoveryWrap:{iv:recoveryWrap.iv,ciphertext:recoveryWrap.ciphertext},
       payload:{iv:payload.iv,ciphertext:payload.ciphertext}
     };
-    dekRaw.fill(0);recoveryRaw.fill(0);
-    return {record:record,recoveryCode:recoveryCode};
+    dekRaw.fill(0);recoveryRaw.fill(0);plainBytes.fill(0);
+    return {record:record,recoveryCode:recoveryCode,deviceKey:deviceKey};
   }
   async function unlockWithPassword(record,password){
     validateRecord(record);
+    if(!record.passwordWrap)throw new Error('Для этой библиотеки не настроен парольный доступ.');
     var salt=base64ToBytes(record.passwordWrap.salt);
     var key=await derivePasswordKey(password,salt,record.kdf.iterations);
     var raw=await decryptBytes(key,record.passwordWrap,'inkly:dek:password:v1');
+    try{return await importAesKey(raw,false)}finally{raw.fill(0)}
+  }
+  async function unlockWithDeviceKey(record,deviceKey){
+    validateRecord(record);
+    if(!record.deviceWrap)throw new Error('Для этой библиотеки не настроен локальный ключ устройства.');
+    if(!deviceKey||deviceKey.type!=='secret'||deviceKey.extractable!==false)throw new Error('Локальный ключ устройства недействителен.');
+    var raw=await decryptBytes(deviceKey,record.deviceWrap,'inkly:dek:device:v1');
     try{return await importAesKey(raw,false)}finally{raw.fill(0)}
   }
   async function unlockWithRecoveryCode(record,code){
@@ -102,12 +125,16 @@
   }
   function validateRecord(record){
     if(!record||typeof record!=='object'||record.format!==FORMAT||record.version!==1||record.cipher!=='AES-256-GCM')throw new Error('Формат или алгоритм защищённого хранилища не поддерживается.');
-    if(!record.kdf||record.kdf.name!=='PBKDF2-HMAC-SHA-256'||!Number.isSafeInteger(record.kdf.iterations)||record.kdf.iterations<600000||record.kdf.iterations>2000000)throw new Error('Параметры защиты пароля некорректны.');
-    ['passwordWrap','recoveryWrap','payload'].forEach(function(k){
+    var hasPassword=!!record.passwordWrap,hasDevice=!!record.deviceWrap;
+    if(hasPassword===hasDevice)throw new Error('Для защищённого хранилища должен быть задан ровно один основной способ разблокировки.');
+    if(hasPassword){
+      if(!record.kdf||record.kdf.name!=='PBKDF2-HMAC-SHA-256'||!Number.isSafeInteger(record.kdf.iterations)||record.kdf.iterations<600000||record.kdf.iterations>2000000)throw new Error('Параметры защиты пароля некорректны.');
+      if(typeof record.passwordWrap.salt!=='string'||base64ToBytes(record.passwordWrap.salt).length!==16)throw new Error('Соль защищённого хранилища повреждена.');
+    }else if(record.kdf!==null&&record.kdf!==undefined)throw new Error('Неверные параметры локального ключа устройства.');
+    ['recoveryWrap','payload'].concat(hasPassword?['passwordWrap']:['deviceWrap']).forEach(function(k){
       var x=record[k];if(!x||typeof x.iv!=='string'||typeof x.ciphertext!=='string')throw new Error('Запись защищённого хранилища неполная.');
       var iv=base64ToBytes(x.iv),ciphertext=base64ToBytes(x.ciphertext);if(iv.length!==12||ciphertext.length<16||ciphertext.length>50*1024*1024+16)throw new Error('Запись защищённого хранилища повреждена или слишком велика.');
     });
-    if(base64ToBytes(record.passwordWrap.salt).length!==16)throw new Error('Соль защищённого хранилища повреждена.');
     return true;
   }
   root.InklySecurityCore=Object.freeze({
@@ -115,6 +142,7 @@
     pbkdf2Iterations:PBKDF2_ITERATIONS,
     createVault:createVault,
     unlockWithPassword:unlockWithPassword,
+    unlockWithDeviceKey:unlockWithDeviceKey,
     unlockWithRecoveryCode:unlockWithRecoveryCode,
     decryptLibrary:decryptLibrary,
     encryptLibrary:encryptLibrary,
