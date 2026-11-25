@@ -116,3 +116,10 @@ The draft branch now includes `vault-ui.js`, which provides first-run password s
 The current test file contains 44 Node regression tests, including tests for encrypted backups, runtime lock/save sequencing, failure recovery, UI script parsing, and the encrypted application save path. The latest workflow result verified in this session is an earlier run with 39 tests; the current 44-test revision still needs a fresh successful CI run. Node tests and fake IndexedDB do not substitute for real-browser testing.
 
 Outstanding release gates: verify the 44-test revision in CI; perform real-browser and mobile end-to-end tests; benchmark PBKDF2 on target phones; implement and test cross-tab coordination; test IndexedDB quota, corruption, interrupted writes and restore; audit CSP, network requests and script integrity. The Google Books catalogue request sends a search topic, not the personal library. The draft PR is not merged or deployed.
+
+
+### Cross-tab session guard
+
+The vault UI now uses the browser Web Locks API to request an exclusive `inkly-vault-session` lock before password, recovery-key, or device-key unlock. A second tab is refused while another tab owns the session lock. The lock is released after a successful manual or inactivity lock. If Web Locks is unavailable, the UI warns the user to keep Inkly in one tab; no cross-browser fallback lease is implemented. Static tests cover the guard's presence, but real multi-tab contention and tab-close behavior still need browser testing.
+
+The current test source contains 46 Node regression tests. The most recent successful workflow confirmed in this session is still the earlier 39-test run; the current 46-test branch head requires a fresh successful CI run before its tests can be called verified.
