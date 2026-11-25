@@ -73,7 +73,7 @@ Audit baseline recorded. No runtime behavior has been modified yet. The next imp
 - Actual interaction and downloads in desktop/mobile browsers.
 - Interrupted downloads, quota exhaustion and storage-denied behavior in a real browser.
 - End-to-end restore against a representative populated user library.
-- Cryptographic protection and encrypted backup format.
+- End-to-end integration of the isolated Web Crypto module with IndexedDB and the UI.
 - IndexedDB migration.
 
 The branch remains a draft and must not be merged into `main` until browser testing and the migration plan are complete.
@@ -90,3 +90,12 @@ The branch remains a draft and must not be merged into `main` until browser test
 - CI run `45618295073` completed successfully: 12 tests passed, 0 failed.
 - Checks cover inline-script syntax, empty first-run library, corrupt-storage startup guard, absence of third-party script tags, legacy/versioned backup validation, malformed records, invalid metadata, and count limits.
 - These are static/logic regression checks, not a substitute for real browser interaction tests on Android and desktop.
+
+### Cryptographic core (isolated; not yet active in the app)
+- Added a local same-origin `security-core.js` module using Web Crypto AES-256-GCM with 96-bit random nonces and 128-bit authentication tags.
+- Library content is encrypted under a randomly generated 256-bit data-encryption key (DEK).
+- The DEK is independently wrapped by a password-derived key (PBKDF2-HMAC-SHA-256, 600,000 iterations) and a 256-bit random recovery code.
+- The module does not persist passwords or recovery codes. The recovery code is returned once to the future setup flow; secure display/confirmation and user storage are not implemented yet.
+- Password and recovery unlock, authenticated decryption, metadata bounds, and nonce separation have automated tests.
+- The module is loaded locally but is not yet called by the application. Existing library persistence remains unchanged until the IndexedDB transaction and recovery lifecycle are ready.
+- PBKDF2 is a compatibility baseline, not a claim that it is optimal on every phone. Mobile timing must be measured before activation; consider a maintained, locally bundled Argon2id implementation if feasible.
