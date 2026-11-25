@@ -134,6 +134,37 @@
       return Object.assign({},record,{payload:payload});
     }finally{plainBytes.fill(0)}
   }
+  async function encryptBackup(data,passphrase){
+    if(typeof passphrase!=='string'||passphrase.length<12)throw new Error('Пароль резервной копии должен содержать не менее 12 символов.');
+    if(!data||typeof data!=='object'||Array.isArray(data)||!Array.isArray(data.books)||!Array.isArray(data.disciplines))throw new Error('Данные резервной копии имеют неверный формат.');
+    var serialized=JSON.stringify(data);
+    if(typeof serialized!=='string')throw new Error('Не удалось сериализовать резервную копию.');
+    var plain=encoder.encode(serialized),salt=randomBytes(16);
+    try{
+      if(plain.length>50*1024*1024)throw new Error('Размер резервной копии превышает 50 МБ.');
+      var key=await derivePasswordKey(passphrase,salt,PBKDF2_ITERATIONS);
+      var encrypted=await encryptBytes(key,plain,'inkly:backup:v1');
+      return {format:'inkly-encrypted-backup',version:1,cipher:'AES-256-GCM',kdf:{name:'PBKDF2-HMAC-SHA-256',iterations:PBKDF2_ITERATIONS},salt:bytesToBase64(salt),iv:encrypted.iv,ciphertext:encrypted.ciphertext};
+    }finally{plain.fill(0);salt.fill(0)}
+  }
+  async function decryptBackup(envelope,passphrase){
+    if(!envelope||typeof envelope!=='object'||Array.isArray(envelope)||envelope.format!=='inkly-encrypted-backup'||envelope.version!==1||envelope.cipher!=='AES-256-GCM')throw new Error('Формат зашифрованной резервной копии не поддерживается.');
+    if(!envelope.kdf||envelope.kdf.name!=='PBKDF2-HMAC-SHA-256'||!Number.isSafeInteger(envelope.kdf.iterations)||envelope.kdf.iterations<600000||envelope.kdf.iterations>2000000)throw new Error('Параметры защиты резервной копии некорректны.');
+    var salt=base64ToBytes(envelope.salt),iv=base64ToBytes(envelope.iv),ciphertext=base64ToBytes(envelope.ciphertext);
+    if(salt.length!==16||iv.length!==12||ciphertext.length<16||ciphertext.length>50*1024*1024+16)throw new Error('Зашифрованная резервная копия повреждена или слишком велика.');
+    if(typeof passphrase!=='string'||passphrase.length<12)throw new Error('Пароль резервной копии должен содержать не менее 12 символов.');
+    var plain=null;
+    try{
+      var key=await derivePasswordKey(passphrase,salt,envelope.kdf.iterations);
+      plain=await decryptBytes(key,{iv:envelope.iv,ciphertext:envelope.ciphertext},'inkly:backup:v1');
+      var data=JSON.parse(decoder.decode(plain));
+      if(!data||typeof data!=='object'||Array.isArray(data)||!Array.isArray(data.books)||!Array.isArray(data.disciplines))throw new Error('Содержимое резервной копии имеет неверный формат.');
+      return data;
+    }catch(e){
+      if(e&&e.message&&(/Пароль резервной копии|Параметры защиты резервной копии|Формат зашифрованной|повреждена|неверный формат/.test(e.message)))throw e;
+      throw new Error('Не удалось расшифровать резервную копию. Проверьте пароль и целостность файла.');
+    }finally{if(plain)plain.fill(0);salt.fill(0);iv.fill(0);ciphertext.fill(0)}
+  }
   function validateRecord(record){
     if(!record||typeof record!=='object'||record.format!==FORMAT||record.version!==1||record.cipher!=='AES-256-GCM')throw new Error('Формат или алгоритм защищённого хранилища не поддерживается.');
     var hasPassword=!!record.passwordWrap,hasDevice=!!record.deviceWrap;
@@ -157,6 +188,8 @@
     unlockWithRecoveryCode:unlockWithRecoveryCode,
     decryptLibrary:decryptLibrary,
     encryptLibrary:encryptLibrary,
+    encryptBackup:encryptBackup,
+    decryptBackup:decryptBackup,
     validateRecord:validateRecord
   });
   if(typeof module!=='undefined'&&module.exports)module.exports=root.InklySecurityCore;
