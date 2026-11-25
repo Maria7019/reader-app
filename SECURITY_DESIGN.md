@@ -178,3 +178,8 @@ The app currently enforces a 25 MiB file-size limit on import, while the cryptog
 ### Multi-tab and browser verification
 
 The UI now requests an exclusive Web Locks API lock for an unlocked vault session where the browser supports it. The lock is released after a successful vault lock and is automatically released by the browser when the owning document is destroyed. Browsers without Web Locks still require the user to keep Inkly to one tab. The coordination behavior has a static regression assertion but still needs a real multi-tab browser test. Real-browser IndexedDB, CryptoKey cloning, mobile KDF timing, interrupted operations, quota errors, and the full setup/unlock/recovery/backup flows still require end-to-end testing.
+
+
+### Follow-up input-rendering hardening — 2026-11-26
+
+Book-cover URLs supplied by the user are treated as untrusted input. All three current cover render paths now use a shared URL sanitizer before embedding a URL in an HTML style attribute. The sanitizer allows HTTPS and same-origin URLs only, rejects external HTTP and non-HTTP schemes, and escapes HTML attribute metacharacters. Regression coverage is included in the Node test suite. This is defense-in-depth for this specific rendering path; it is not a substitute for removing inline event handlers and tightening the CSP, nor for browser-level testing.
