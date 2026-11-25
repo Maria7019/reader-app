@@ -77,3 +77,9 @@ Audit baseline recorded. No runtime behavior has been modified yet. The next imp
 - IndexedDB migration.
 
 The branch remains a draft and must not be merged into `main` until browser testing and the migration plan are complete.
+
+
+### Empty-library baseline
+- Changed the fresh-install initial state to contain no sample book. Default categories and subcategory organization remain available.
+- Existing browser storage is intentionally not rewritten to remove a previously saved sample entry automatically; even demo-looking records are preserved rather than silently deleted. A user can remove such an entry through the app if it is present.
+- This is separate from the security migration: no IndexedDB migration is needed merely because the user has not added books yet.
