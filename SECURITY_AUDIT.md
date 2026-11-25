@@ -107,3 +107,12 @@ The draft security branch now connects the encrypted vault runtime to applicatio
 The most recent confirmed workflow before this note passed 43 tests; one additional test has since been added for the manual lock control and must pass before this checkpoint is considered verified. No real-browser/mobile test has been performed. The main branch remains unchanged; this is still a draft PR.
 
 Remaining critical work: browser-level setup/restart/recovery/import tests, mobile KDF benchmarking, storage-quota and concurrent-tab conflict handling, CSP/dependency/network audit, and final review of data-loss behavior. New backups are encrypted; old plaintext JSON backups remain importable. The book-of-the-day feature contacts Google Books for catalogue suggestions, but the personal library is not uploaded.
+
+
+## Current integration checkpoint — 2026-11-25
+
+The draft branch now includes `vault-ui.js`, which provides first-run password setup, one-time recovery-key display, password and recovery-key unlock, five-minute inactivity locking, and manual locking. `index.html` routes normal saves, imports, and new encrypted backup exports through the vault runtime. The application no longer calls `localStorage.setItem` for library persistence. A legacy `inkly_v1` record is retained until the encrypted vault has been written successfully; it is then removed where browser storage permits.
+
+The current test file contains 44 Node regression tests, including tests for encrypted backups, runtime lock/save sequencing, failure recovery, UI script parsing, and the encrypted application save path. The latest workflow result verified in this session is an earlier run with 39 tests; the current 44-test revision still needs a fresh successful CI run. Node tests and fake IndexedDB do not substitute for real-browser testing.
+
+Outstanding release gates: verify the 44-test revision in CI; perform real-browser and mobile end-to-end tests; benchmark PBKDF2 on target phones; implement and test cross-tab coordination; test IndexedDB quota, corruption, interrupted writes and restore; audit CSP, network requests and script integrity. The Google Books catalogue request sends a search topic, not the personal library. The draft PR is not merged or deployed.
