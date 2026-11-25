@@ -473,3 +473,12 @@ test('vault runtime refuses to discard in-memory data after a failed write and a
 test('profile exposes a manual lock control for the encrypted vault', () => {
   assert.match(source, /InklyVaultUI\.lock\(\)/);
 });
+
+
+test('application sets a restrictive same-origin CSP and suppresses referrer headers', () => {
+  assert.match(html, /http-equiv="Content-Security-Policy"/);
+  assert.match(html, /script-src 'self' 'unsafe-inline'/);
+  assert.match(html, /object-src 'none'/);
+  assert.match(html, /connect-src 'self' https:\/\/www\.googleapis\.com/);
+  assert.match(html, /name="referrer" content="no-referrer"/);
+});
