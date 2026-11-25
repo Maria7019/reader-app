@@ -99,3 +99,11 @@ The branch remains a draft and must not be merged into `main` until browser test
 - Password and recovery unlock, authenticated decryption, metadata bounds, and nonce separation have automated tests.
 - The module is loaded locally but is not yet called by the application. Existing library persistence remains unchanged until the IndexedDB transaction and recovery lifecycle are ready.
 - PBKDF2 is a compatibility baseline, not a claim that it is optimal on every phone. Mobile timing must be measured before activation; consider a maintained, locally bundled Argon2id implementation if feasible.
+
+## Implementation progress — 2026-11-25
+
+The draft security branch now connects the encrypted vault runtime to application startup, password setup, recovery-key confirmation, password/recovery unlock, serialized encrypted saves, five-minute inactivity lock, manual lock, encrypted backup export/import, and legacy JSON import. A failed write now keeps the in-memory state available for retry and prevents the idle-lock path from clearing it before a successful retry. Save-success notifications wait for the IndexedDB write to complete.
+
+The most recent confirmed workflow before this note passed 43 tests; one additional test has since been added for the manual lock control and must pass before this checkpoint is considered verified. No real-browser/mobile test has been performed. The main branch remains unchanged; this is still a draft PR.
+
+Remaining critical work: browser-level setup/restart/recovery/import tests, mobile KDF benchmarking, storage-quota and concurrent-tab conflict handling, CSP/dependency/network audit, and final review of data-loss behavior. New backups are encrypted; old plaintext JSON backups remain importable. The book-of-the-day feature contacts Google Books for catalogue suggestions, but the personal library is not uploaded.
