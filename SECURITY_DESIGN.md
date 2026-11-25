@@ -188,3 +188,8 @@ Book-cover URLs supplied by the user are treated as untrusted input. All three c
 ### Additional input-allocation bound — 2026-11-26
 
 The shared base64 decoder rejects encoded values larger than 70 MiB before decoding. This bound accommodates the supported 50 MiB encrypted payload ceiling while avoiding unbounded allocations from oversized/corrupt local records. The unpadded 32-byte recovery code format remains supported. Two regression tests cover both behaviors. Real-browser verification remains outstanding.
+
+
+### Backup import structure limits — 2026-11-26
+
+Before an imported backup is applied, its object tree is recursively checked. The validator rejects prototype-sensitive keys, nesting deeper than 40 levels, individual strings larger than 2 MiB, and trees exceeding 200,000 visited nodes. This provides defense in depth against prototype pollution and pathological import payloads. The validation remains compatible with legacy and versioned backup formats covered by regression tests.
