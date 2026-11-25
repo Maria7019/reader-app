@@ -14,6 +14,7 @@
     var host=document.querySelector('.vault-screen');if(host)host.appendChild(node);
   }
   function activate(data){
+    callbacks.initialData=null;callbacks.legacyRaw=null;
     document.body.classList.remove('vault-locked');
     if(typeof callbacks.onUnlock==='function')callbacks.onUnlock(data);
     armLock();
@@ -90,6 +91,7 @@
   document.addEventListener('visibilitychange',function(){
     if(!runtime||runtime.getStatus()!=='unlocked')return;
     if(document.hidden){if(idleTimer)clearTimeout(idleTimer);idleTimer=setTimeout(lock,5*60*1000)}
+    else if(Date.now()-lastActivity>=5*60*1000)lock();
     else armLock();
   });
 
@@ -99,8 +101,8 @@
     try{
       var result=await runtime.initialize(callbacks.legacyRaw);
       if(result.status==='setup-required'){showSetup(null);return}
-      if(result.status==='migration-required'){showSetup(result.legacyData);return}
-      if(result.status==='locked'){showUnlock();return}
+      if(result.status==='migration-required'){showSetup(callbacks.initialData||result.legacyData);callbacks.legacyRaw=null;return}
+      if(result.status==='locked'){callbacks.initialData=null;callbacks.legacyRaw=null;showUnlock();return}
       if(typeof callbacks.onError==='function')callbacks.onError(new Error('Неизвестное состояние защищённого хранилища.'));
     }catch(e){if(typeof callbacks.onError==='function')callbacks.onError(e)}
   }
