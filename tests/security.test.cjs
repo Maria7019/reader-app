@@ -166,3 +166,26 @@ test('rejects non-object and oversized library updates before encryption', async
   await assert.rejects(securityCore.encryptLibrary(created.record, key, null));
   await assert.rejects(securityCore.encryptLibrary(created.record, key, 'not an object'));
 });
+
+
+test('encrypted local mode works without requiring a password', async () => {
+  const data = { books: [{ title: 'Local mode' }], disciplines: [] };
+  const created = await securityCore.createVault(data, null);
+  assert.equal(created.record.passwordWrap, null);
+  assert.ok(created.record.deviceWrap);
+  assert.equal(created.deviceKey.extractable, false);
+  const key = await securityCore.unlockWithDeviceKey(created.record, created.deviceKey);
+  assert.deepEqual(await securityCore.decryptLibrary(created.record, key), data);
+  const recoveryKey = await securityCore.unlockWithRecoveryCode(created.record, created.recoveryCode);
+  assert.deepEqual(await securityCore.decryptLibrary(created.record, recoveryKey), data);
+});
+
+test('device mode rejects an unrelated local key', async () => {
+  const created = await securityCore.createVault({ books: [], disciplines: [] }, null);
+  const unrelated = await webcrypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  await assert.rejects(securityCore.unlockWithDeviceKey(created.record, unrelated));
+});
+
+test('password mode rejects short passwords before creating a vault', async () => {
+  await assert.rejects(securityCore.createVault({ books: [], disciplines: [] }, 'short'));
+});
