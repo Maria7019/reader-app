@@ -302,3 +302,77 @@ test('IndexedDB adapter refuses a device vault whose local key is missing', asyn
   db.stores.get('vaults').set('active', { id: 'active', record: created.record, deviceKey: null });
   await assert.rejects(indexedStore.readVault(), /отсутствует действительный ключ устройства/);
 });
+
+
+const vaultRuntime = require('../vault-runtime.js');
+
+function createMemoryVaultStore() {
+  let saved = null;
+  return {
+    async readVault() { return saved ? structuredClone(saved) : null; },
+    async writeVault(record, deviceKey) {
+      saved = structuredClone({ record, deviceKey: deviceKey || null });
+      return true;
+    }
+  };
+}
+
+test('vault runtime requires recovery-key confirmation before persisting a new vault', async () => {
+  const store = createMemoryVaultStore();
+  const runtime = vaultRuntime.create({ store, crypto: securityCore });
+  assert.deepEqual(await runtime.initialize(), { status: 'setup-required' });
+  const setup = await runtime.prepareSetup({ books: [], disciplines: ['Литература'] }, 'a sufficiently long test password');
+  assert.equal(runtime.getStatus(), 'setup-required');
+  assert.equal(await store.readVault(), null);
+  assert.equal(setup.method, 'password');
+  assert.equal(typeof setup.recoveryCode, 'string');
+  await runtime.confirmSetup();
+  assert.equal(runtime.getStatus(), 'locked');
+  assert.ok(await store.readVault());
+});
+
+test('vault runtime unlocks, serializes encrypted saves, and locks without exposing plaintext in storage', async () => {
+  const store = createMemoryVaultStore();
+  const first = vaultRuntime.create({ store, crypto: securityCore });
+  await first.initialize();
+  await first.prepareSetup({ books: [], disciplines: [] }, 'a sufficiently long test password');
+  await first.confirmSetup();
+  const runtime = vaultRuntime.create({ store, crypto: securityCore });
+  const status = await runtime.initialize();
+  assert.equal(status.status, 'locked');
+  const opened = await runtime.unlockWithPassword('a sufficiently long test password');
+  assert.deepEqual(opened, { books: [], disciplines: [] });
+  const next = { books: [{ title: 'private note title', notes: ['private thought'] }], disciplines: [] };
+  await Promise.all([runtime.save(next), runtime.save(next)]);
+  const stored = await store.readVault();
+  assert.equal(JSON.stringify(stored).includes('private thought'), false);
+  assert.deepEqual(await securityCore.decryptLibrary(
+    stored.record,
+    await securityCore.unlockWithPassword(stored.record, 'a sufficiently long test password')
+  ), next);
+  await runtime.lock();
+  assert.equal(runtime.getStatus(), 'locked');
+  assert.throws(() => runtime.getData(), /разблокируйте/);
+});
+
+test('vault runtime rejects wrong credentials and leaves the vault locked', async () => {
+  const store = createMemoryVaultStore();
+  const setupRuntime = vaultRuntime.create({ store, crypto: securityCore });
+  await setupRuntime.initialize();
+  await setupRuntime.prepareSetup({ books: [], disciplines: [] }, 'a sufficiently long test password');
+  await setupRuntime.confirmSetup();
+  const runtime = vaultRuntime.create({ store, crypto: securityCore });
+  await runtime.initialize();
+  await assert.rejects(runtime.unlockWithPassword('wrong password completely'));
+  assert.equal(runtime.getStatus(), 'locked');
+});
+
+test('vault runtime identifies legacy data without changing its source', async () => {
+  const store = createMemoryVaultStore();
+  const runtime = vaultRuntime.create({ store, crypto: securityCore });
+  const legacy = JSON.stringify({ books: [{ title: 'Legacy entry' }], disciplines: [] });
+  const result = await runtime.initialize(legacy);
+  assert.equal(result.status, 'migration-required');
+  assert.equal(result.legacyData.books[0].title, 'Legacy entry');
+  assert.equal(await store.readVault(), null);
+});
