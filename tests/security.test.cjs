@@ -376,3 +376,19 @@ test('vault runtime identifies legacy data without changing its source', async (
   assert.equal(result.legacyData.books[0].title, 'Legacy entry');
   assert.equal(await store.readVault(), null);
 });
+
+
+test('vault runtime prevents new writes once locking has been requested', async () => {
+  const store = createMemoryVaultStore();
+  const setupRuntime = vaultRuntime.create({ store, crypto: securityCore });
+  await setupRuntime.initialize();
+  await setupRuntime.prepareSetup({ books: [], disciplines: [] }, 'a sufficiently long test password');
+  await setupRuntime.confirmSetup();
+  const runtime = vaultRuntime.create({ store, crypto: securityCore });
+  await runtime.initialize();
+  await runtime.unlockWithPassword('a sufficiently long test password');
+  const locking = runtime.lock();
+  assert.throws(() => runtime.save({ books: [], disciplines: [] }), /блокируется/);
+  await locking;
+  assert.equal(runtime.getStatus(), 'locked');
+});
