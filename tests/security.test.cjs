@@ -407,9 +407,11 @@ test('application saves through the encrypted runtime instead of writing plainte
   assert.doesNotMatch(source, /localStorage\.setItem\(KEY/);
 });
 
-test('application imports into the encrypted runtime and labels plaintext exports explicitly', () => {
+test('application imports through encrypted storage and exports encrypted backups', () => {
   assert.match(source, /await vaultRuntime\.save\(state\)/);
-  assert.match(source, /inkly-backup-UNENCRYPTED\.json/);
+  assert.match(source, /InklySecurityCore\.encryptBackup\(state,password\)/);
+  assert.match(source, /InklySecurityCore\.decryptBackup\(parsed,backupPassword\)/);
+  assert.match(source, /inkly-backup-encrypted\.json/);
 });
 
 test('vault UI presents recovery credentials and applies a five-minute inactivity lock', () => {
