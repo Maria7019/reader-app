@@ -308,13 +308,15 @@ test('IndexedDB adapter refuses a device vault whose local key is missing', asyn
 const vaultRuntime = require('../vault-runtime.js');
 
 function createMemoryVaultStore() {
-  let saved = null;
+  let saved = null, failWrites = false;
   return {
     async readVault() { return saved ? structuredClone(saved) : null; },
     async writeVault(record, deviceKey) {
+      if (failWrites) throw new Error('simulated storage failure');
       saved = structuredClone({ record, deviceKey: deviceKey || null });
       return true;
-    }
+    },
+    setFailWrites(value) { failWrites = value; }
   };
 }
 
@@ -444,4 +446,26 @@ test('encrypted backup validates KDF metadata, sizes, and decrypted root structu
   await assert.rejects(securityCore.decryptBackup({ ...envelope, kdf: { name: 'PBKDF2-HMAC-SHA-256', iterations: 1000 } }, 'a separate backup password'));
   await assert.rejects(securityCore.encryptBackup({ books: [], disciplines: [] }, 'short'));
   await assert.rejects(securityCore.decryptBackup({ ...envelope, format: 'unknown' }, 'a separate backup password'));
+});
+
+
+test('vault runtime refuses to discard in-memory data after a failed write and allows retry', async () => {
+  const store = createMemoryVaultStore();
+  const setup = vaultRuntime.create({ store, crypto: securityCore });
+  await setup.initialize();
+  await setup.prepareSetup({ books: [], disciplines: [] }, 'a sufficiently long test password');
+  await setup.confirmSetup();
+  const runtime = vaultRuntime.create({ store, crypto: securityCore });
+  await runtime.initialize();
+  await runtime.unlockWithPassword('a sufficiently long test password');
+  const updated = { books: [{ title: 'unsaved until retry' }], disciplines: [] };
+  store.setFailWrites(true);
+  await assert.rejects(runtime.save(updated), /simulated storage failure/);
+  await assert.rejects(runtime.lock(), /оставлена разблокированной/);
+  assert.equal(runtime.getStatus(), 'unlocked');
+  assert.equal(runtime.getData().books.length, 0);
+  store.setFailWrites(false);
+  await runtime.save(updated);
+  await runtime.lock();
+  assert.equal(runtime.getStatus(), 'locked');
 });
