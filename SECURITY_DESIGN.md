@@ -138,7 +138,7 @@ Not implemented yet:
 The draft branch now includes a same-origin Web Crypto module and an isolated IndexedDB adapter. It implements AES-256-GCM encryption and a 256-bit random DEK. If the user chooses a password, the DEK is wrapped with PBKDF2-HMAC-SHA-256 (600,000 iterations); if the user declines the optional app password, it is wrapped by a non-extractable device CryptoKey intended for separate IndexedDB storage. A 256-bit random recovery code independently wraps the DEK in either mode. The adapter stores the encrypted envelope and optional device CryptoKey atomically in a single IndexedDB record. Both modules are unit-tested with a Node test double, but real-browser IndexedDB behavior and CryptoKey structured cloning have not yet been verified. They are deliberately not wired into live persistence until startup/save integration, migration, first-run setup, recovery UX, and rollback behavior are complete. Device-key mode protects against casual plaintext inspection but does not protect against malicious same-origin JavaScript or a compromised browser profile. The PBKDF2 work factor must be benchmarked on target mobile browsers before activation; evaluate a maintained local Argon2id bundle if practical.
 
 - Added `vault-runtime.js` as a separate lifecycle coordinator: it distinguishes first-run setup, locked vault, and legacy migration states; requires an explicit setup confirmation before writing the new vault; supports password, recovery-code, and device-key unlock; serializes encrypted saves; and clears the in-memory DEK and plaintext state when locking.
-- The runtime is loaded by the page but is not yet connected to the app's live state or the existing synchronous `save()` call sites. Its lifecycle behavior has regression tests, including wrong credentials, legacy-data preservation, encrypted persistence, and lock/write sequencing. Do not treat the application as encrypted until the live state integration and browser-level tests are complete.
+- This was the initial runtime-only checkpoint. It is superseded by the connected implementation status below.
 
 ## 10. Updated implementation status — 2026-11-25
 
@@ -152,7 +152,7 @@ The earlier status notes above are historical and are superseded by this section
 - After successful unlock, the legacy plaintext key is removed where browser storage permits. While locked, the application clears its live state reference; the runtime clears its DEK and decrypted data.
 - The UI supports password unlock, recovery-code unlock, and device-key unlock for any pre-existing device-mode vault.
 - An inactivity timer locks the vault after five minutes. A hidden page is also locked after five minutes; returning after the timeout triggers a lock.
-- Import now writes through the encrypted runtime. The ordinary JSON export remains intentionally plaintext and is labelled as unencrypted; encrypted backup export/import is still pending.
+- Import writes through the encrypted runtime. New exports use an independently passphrase-encrypted backup envelope; legacy plaintext JSON backups remain importable for compatibility.
 - Delayed book-of-the-day responses and imports are guarded against completing after the vault has been locked.
 
 ### Verification
@@ -173,3 +173,8 @@ The connected implementation is still a draft. Do not treat it as production-rea
 Encrypted backup export/import is now implemented in the draft branch. The backup envelope uses a separate user-chosen passphrase (minimum 12 characters), PBKDF2-HMAC-SHA-256 with 600,000 iterations, a fresh 16-byte salt, and AES-256-GCM with a fresh 96-bit nonce and authenticated context. The envelope contains no plaintext library content. Import verifies the encrypted envelope, decrypts it, validates the library structure, previews record counts, asks for replacement confirmation, and writes through the encrypted vault runtime. Legacy plaintext JSON backups remain importable for compatibility; new exports are encrypted. The backup passphrase is not stored by Inkly.
 
 The app currently enforces a 25 MiB file-size limit on import, while the cryptographic backup module has a 50 MiB payload ceiling. PBKDF2 performance still needs testing on target phones. Browser-level verification remains outstanding.
+
+
+### Multi-tab and browser verification
+
+The current implementation does not yet coordinate concurrent tabs. Until a cross-tab lease or conflict-detection mechanism is implemented and tested, use Inkly in one browser tab at a time. A second tab may otherwise hold an older decrypted snapshot and overwrite newer changes. This is a release blocker for treating multi-tab use as safe. Real-browser IndexedDB, CryptoKey cloning, mobile KDF timing, interrupted operations, quota errors, and the full setup/unlock/recovery/backup flows still require end-to-end testing.
