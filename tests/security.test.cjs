@@ -392,3 +392,27 @@ test('vault runtime prevents new writes once locking has been requested', async 
   await locking;
   assert.equal(runtime.getStatus(), 'locked');
 });
+
+
+const vaultUiSource = fs.readFileSync(path.join(__dirname, '..', 'vault-ui.js'), 'utf8');
+
+test('vault UI module parses and is loaded before the application script', () => {
+  assert.doesNotThrow(() => new Function(vaultUiSource));
+  assert.match(html, /<script src="\.\/vault-ui\.js"><\/script>/);
+});
+
+test('application saves through the encrypted runtime instead of writing plaintext to localStorage', () => {
+  assert.match(source, /vaultRuntime\.save\(state\)/);
+  assert.doesNotMatch(source, /localStorage\.setItem\(KEY/);
+});
+
+test('application imports into the encrypted runtime and labels plaintext exports explicitly', () => {
+  assert.match(source, /await vaultRuntime\.save\(state\)/);
+  assert.match(source, /inkly-backup-UNENCRYPTED\.json/);
+});
+
+test('vault UI presents recovery credentials and applies a five-minute inactivity lock', () => {
+  assert.match(vaultUiSource, /Ключ восстановления/);
+  assert.match(vaultUiSource, /5\*60\*1000/);
+  assert.match(vaultUiSource, /unlockWithRecoveryCode/);
+});
