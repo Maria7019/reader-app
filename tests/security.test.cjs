@@ -74,7 +74,11 @@ const safeCoverCss = new Function('location', source.slice(coverHelperStart, cov
 
 const bookIdArgMatch = source.match(/function bookIdArg\(id\)\{[\s\S]*?\}/);
 assert.ok(bookIdArgMatch, 'book IDs must pass through a dedicated JavaScript/HTML argument encoder');
-const bookIdArg = new Function(bookIdArgMatch[0] + '; return bookIdArg;')();
+const escapeHelperStart = source.indexOf('function esc(s){');
+const escapeHelperEnd = source.indexOf('function toast(', escapeHelperStart);
+assert.notEqual(escapeHelperStart, -1, 'HTML escaping helper must exist');
+assert.notEqual(escapeHelperEnd, -1, 'HTML escaping helper must precede toast rendering');
+const bookIdArg = new Function(source.slice(escapeHelperStart, escapeHelperEnd) + bookIdArgMatch[0] + '; return bookIdArg;')();
 
 test('book IDs are encoded safely before insertion into inline event handlers', () => {
   const hostileId = "x');alert(document.domain);//";
