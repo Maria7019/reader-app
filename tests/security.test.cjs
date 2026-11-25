@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-const scriptMatch = html.match(/<script>([\\s\\S]*?)<\\/script>/i);
+const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/i);
 
 assert.ok(scriptMatch, 'the application must contain its inline script');
 const source = scriptMatch[1];
@@ -14,16 +14,16 @@ test('the complete inline application script parses', () => {
 });
 
 test('a fresh installation starts with an empty book list', () => {
-  assert.match(source, /initial=\\{books:\\[\\],disciplines:/);
+  assert.match(source, /initial=\{books:\[\],disciplines:/);
 });
 
 test('unreadable storage stops normal startup and does not autosave defaults', () => {
-  assert.match(source, /if\\(storageLoadError\\)\\{showStorageRecovery\\(\\)\\}else\\{render\\(\\);save\\(\\)\\}/);
-  assert.match(source, /rawStoredState=localStorage\\.getItem\\(KEY\\)/);
+  assert.match(source, /if\(storageLoadError\)\{showStorageRecovery\(\)\}else\{render\(\);save\(\)\}/);
+  assert.match(source, /rawStoredState=localStorage\.getItem\(KEY\)/);
 });
 
 test('the page does not load third-party JavaScript directly', () => {
-  assert.doesNotMatch(html, /<script\\b[^>]*\\bsrc\\s*=/i);
+  assert.doesNotMatch(html, /<script\b[^>]*\bsrc\s*=/i);
 });
 
 const validatorStart = source.indexOf('function validateBackupObject(value){');
