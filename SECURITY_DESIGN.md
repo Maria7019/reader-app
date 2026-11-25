@@ -127,7 +127,7 @@ Implemented on the draft branch:
 - structural validation, size/count bounds, confirmation, pre-import backup, and rollback attempt on failed persistence.
 
 Not implemented yet:
-- IndexedDB migration and transactional persistence;
+- connection of the isolated IndexedDB adapter to application startup/save operations and non-destructive migration;
 - activation of encryption in the application (the isolated crypto primitives now exist, but app data is not yet encrypted);
 - password lock and inactivity timeout;
 - recovery-key setup UI, display confirmation, safe storage guidance, and end-to-end recovery flow;
@@ -135,4 +135,4 @@ Not implemented yet:
 - browser end-to-end tests.
 
 ### Isolated cryptographic primitives added
-The draft branch now includes a same-origin Web Crypto module. It implements AES-256-GCM encryption and a 256-bit random DEK. If the user chooses a password, the DEK is wrapped with PBKDF2-HMAC-SHA-256 (600,000 iterations); if the user declines the optional app password, it is wrapped by a non-extractable device CryptoKey intended for separate IndexedDB storage. A 256-bit random recovery code independently wraps the DEK in either mode. These primitives are unit-tested, but are deliberately not wired into live persistence until IndexedDB transactions, first-run setup, recovery UX, and rollback behavior are complete. Device-key mode protects against casual plaintext inspection but does not protect against malicious same-origin JavaScript or a compromised browser profile. The PBKDF2 work factor must be benchmarked on target mobile browsers before activation; evaluate a maintained local Argon2id bundle if practical.
+The draft branch now includes a same-origin Web Crypto module and an isolated IndexedDB adapter. It implements AES-256-GCM encryption and a 256-bit random DEK. If the user chooses a password, the DEK is wrapped with PBKDF2-HMAC-SHA-256 (600,000 iterations); if the user declines the optional app password, it is wrapped by a non-extractable device CryptoKey intended for separate IndexedDB storage. A 256-bit random recovery code independently wraps the DEK in either mode. The adapter stores the encrypted envelope and optional device CryptoKey atomically in a single IndexedDB record. Both modules are unit-tested with a Node test double, but real-browser IndexedDB behavior and CryptoKey structured cloning have not yet been verified. They are deliberately not wired into live persistence until startup/save integration, migration, first-run setup, recovery UX, and rollback behavior are complete. Device-key mode protects against casual plaintext inspection but does not protect against malicious same-origin JavaScript or a compromised browser profile. The PBKDF2 work factor must be benchmarked on target mobile browsers before activation; evaluate a maintained local Argon2id bundle if practical.
