@@ -538,3 +538,22 @@ test('vault UI uses the Web Locks API to prevent parallel unlocked sessions wher
   assert.match(vaultUiSource, /releaseSessionLock\(\);\s*if\(typeof callbacks\.onLock/);
   assert.match(vaultUiSource, /Открывайте библиотеку в одной вкладке/);
 });
+
+
+test('base64 decoder rejects oversized encoded input before allocating decoded bytes', () => {
+  assert.throws(() => securityCore.validateRecord({
+    format: 'inkly-encrypted-v1',
+    version: 1,
+    cipher: 'AES-256-GCM',
+    kdf: { name: 'PBKDF2-HMAC-SHA-256', iterations: 600000 },
+    passwordWrap: { salt: 'A'.repeat(70 * 1024 * 1024 + 1), iv: 'AAAAAAAAAAAAAAAA', ciphertext: 'AAAAAAAAAAAAAAAAAAAAAA==' },
+    recoveryWrap: { iv: 'AAAAAAAAAAAAAAAA', ciphertext: 'AAAAAAAAAAAAAAAAAAAAAA==' },
+    payload: { iv: 'AAAAAAAAAAAAAAAA', ciphertext: 'AAAAAAAAAAAAAAAAAAAAAA==' }
+  }), /Некорректные двоичные данные/);
+});
+
+test('base64 decoder continues to accept the unpadded 32-byte recovery credential', async () => {
+  const created = await securityCore.createVault({ books: [], disciplines: [] }, 'correct horse battery staple');
+  const key = await securityCore.unlockWithRecoveryCode(created.record, created.recoveryCode);
+  assert.deepEqual(await securityCore.decryptLibrary(created.record, key), { books: [], disciplines: [] });
+});
