@@ -74,7 +74,7 @@ test('a fresh installation starts with an empty book list', () => {
 });
 
 test('unreadable storage stops normal startup and does not autosave defaults', () => {
-  assert.match(source, /if\(storageLoadError\)\{showStorageRecovery\(\)\}else\{render\(\);save\(\)\}/);
+  assert.match(source, /if\(storageLoadError\)\{showStorageRecovery\(\);return\}/);\n  assert.match(source, /startVault\(\)/);
   assert.match(source, /rawStoredState=localStorage\.getItem\(KEY\)/);
 });
 
