@@ -83,3 +83,10 @@ The branch remains a draft and must not be merged into `main` until browser test
 - Changed the fresh-install initial state to contain no sample book. Default categories and subcategory organization remain available.
 - Existing browser storage is intentionally not rewritten to remove a previously saved sample entry automatically; even demo-looking records are preserved rather than silently deleted. A user can remove such an entry through the app if it is present.
 - This is separate from the security migration: no IndexedDB migration is needed merely because the user has not added books yet.
+
+
+### Regression checks
+- Added a dependency-free Node.js test suite and GitHub Actions workflow.
+- CI run `45618295073` completed successfully: 12 tests passed, 0 failed.
+- Checks cover inline-script syntax, empty first-run library, corrupt-storage startup guard, absence of third-party script tags, legacy/versioned backup validation, malformed records, invalid metadata, and count limits.
+- These are static/logic regression checks, not a substitute for real browser interaction tests on Android and desktop.
