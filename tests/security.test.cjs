@@ -245,6 +245,26 @@ test('password mode rejects short passwords before creating a vault', async () =
   await assert.rejects(securityCore.createVault({ books: [], disciplines: [] }, 'short'));
 });
 
+test('recovery credentials are high-entropy independent 256-bit values', async () => {
+  const first = await securityCore.createVault({ books: [], disciplines: [] }, 'correct horse battery staple');
+  const second = await securityCore.createVault({ books: [], disciplines: [] }, 'correct horse battery staple');
+  const decode = value => Buffer.from(value, 'base64');
+  assert.equal(first.recoveryCode.length, 43);
+  assert.equal(decode(first.recoveryCode).length, 32);
+  assert.notEqual(first.recoveryCode, second.recoveryCode);
+  assert.notEqual(first.record.passwordWrap.salt, second.record.passwordWrap.salt);
+  assert.equal(Object.hasOwn(first.record, 'recoveryCode'), false);
+});
+
+test('vault setup rejects cyclic input without affecting later vault creation', async () => {
+  const cyclic = { books: [], disciplines: [] };
+  cyclic.self = cyclic;
+  await assert.rejects(securityCore.createVault(cyclic, 'correct horse battery staple'));
+  const valid = await securityCore.createVault({ books: [], disciplines: [] }, 'correct horse battery staple');
+  const key = await securityCore.unlockWithPassword(valid.record, 'correct horse battery staple');
+  assert.deepEqual(await securityCore.decryptLibrary(valid.record, key), { books: [], disciplines: [] });
+});
+
 
 test('IndexedDB adapter writes and reads a password-protected vault', async () => {
   const data = { books: [{ title: 'Stored privately' }], disciplines: [] };
