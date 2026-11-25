@@ -39,7 +39,13 @@
         request.onerror=function(){failed=true;reject(request.error||new Error('Не удалось прочитать защищённое хранилище.'))};
         tx.oncomplete=function(){
           if(failed)return;
-          if(result){try{securityCore().validateRecord(result.record)}catch(e){reject(e);return}}
+          if(result){
+            try{
+              securityCore().validateRecord(result.record);
+              if(result.record.deviceWrap&&(!result.deviceKey||result.deviceKey.type!=='secret'||result.deviceKey.extractable!==false))throw new Error('В защищённом хранилище отсутствует действительный ключ устройства. Не очищайте данные сайта.');
+              if(result.record.passwordWrap&&result.deviceKey)throw new Error('В защищённом хранилище обнаружен неожиданный локальный ключ. Не очищайте данные сайта.');
+            }catch(e){reject(e);return}
+          }
           resolve(result?{record:result.record,deviceKey:result.deviceKey||null,updatedAt:result.updatedAt||null}:null);
         };
         tx.onerror=function(){failed=true;reject(tx.error||new Error('Ошибка чтения защищённого хранилища.'))};
