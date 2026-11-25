@@ -60,7 +60,7 @@
       cipher:'AES-256-GCM',
       kdf:{name:'PBKDF2-HMAC-SHA-256',iterations:PBKDF2_ITERATIONS},
       passwordWrap:{salt:bytesToBase64(passwordSalt),iv:passwordWrap.iv,ciphertext:passwordWrap.ciphertext},
-      recoveryWrap:{salt:bytesToBase64(recoverySalt),iv:recoveryWrap.iv,ciphertext:recoveryWrap.ciphertext},
+      recoveryWrap:{iv:recoveryWrap.iv,ciphertext:recoveryWrap.ciphertext},
       payload:{iv:payload.iv,ciphertext:payload.ciphertext}
     };
     dekRaw.fill(0);recoveryRaw.fill(0);
