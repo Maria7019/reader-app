@@ -102,8 +102,8 @@
     var normalized=code.replace(/\s+/g,'');
     var raw=base64ToBytes(normalized);
     if(raw.length!==32)throw new Error('Ключ восстановления введён в неверном формате.');
-    var key=await importAesKey(raw,false);
-    raw.fill(0);
+    var key;
+    try{key=await importAesKey(raw,false)}finally{raw.fill(0)}
     var dekRaw=await decryptBytes(key,record.recoveryWrap,'inkly:dek:recovery:v1');
     try{return await importAesKey(dekRaw,false)}finally{dekRaw.fill(0)}
   }
@@ -119,9 +119,11 @@
     var serialized=JSON.stringify(data);
     if(typeof serialized!=='string')throw new Error('Не удалось сериализовать библиотеку.');
     var plainBytes=encoder.encode(serialized);
-    if(plainBytes.length>50*1024*1024)throw new Error('Размер библиотеки превышает допустимый предел.');
-    var payload=await encryptBytes(key,plainBytes,'inkly:library:v1');
-    return Object.assign({},record,{payload:payload});
+    if(plainBytes.length>50*1024*1024){plainBytes.fill(0);throw new Error('Размер библиотеки превышает допустимый предел.')}
+    try{
+      var payload=await encryptBytes(key,plainBytes,'inkly:library:v1');
+      return Object.assign({},record,{payload:payload});
+    }finally{plainBytes.fill(0)}
   }
   function validateRecord(record){
     if(!record||typeof record!=='object'||record.format!==FORMAT||record.version!==1||record.cipher!=='AES-256-GCM')throw new Error('Формат или алгоритм защищённого хранилища не поддерживается.');
