@@ -127,9 +127,12 @@ Implemented on the draft branch:
 - structural validation, size/count bounds, confirmation, pre-import backup, and rollback attempt on failed persistence.
 
 Not implemented yet:
-- IndexedDB migration;
-- encryption at rest;
+- IndexedDB migration and transactional persistence;
+- activation of encryption in the application (the isolated crypto primitives now exist, but app data is not yet encrypted);
 - password lock and inactivity timeout;
-- recovery-key setup and recovery;
+- recovery-key setup UI, display confirmation, safe storage guidance, and end-to-end recovery flow;
 - encrypted backup export/import;
 - browser end-to-end tests.
+
+### Isolated cryptographic primitives added
+The draft branch now includes a same-origin Web Crypto module. It implements AES-256-GCM encryption, a 256-bit random DEK, password-based DEK wrapping with PBKDF2-HMAC-SHA-256 (600,000 iterations), and independent wrapping via a 256-bit random recovery code. These primitives are unit-tested, but are deliberately not wired into live persistence until IndexedDB transactions, first-run setup, recovery UX, and rollback behavior are complete. The PBKDF2 work factor must be benchmarked on target mobile browsers before activation; evaluate a maintained local Argon2id bundle if practical.
