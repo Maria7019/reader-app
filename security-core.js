@@ -23,8 +23,7 @@
   function randomBytes(length){
     var out=new Uint8Array(length);cryptoApi().getRandomValues(out);return out;
   }
-  function randomId(){return bytesToBase64(randomBytes(16)).replace(/[+/=]/g,'').slice(0,20)}
-  async function importAesKey(raw,extractable){
+    async function importAesKey(raw,extractable){
     return cryptoApi().subtle.importKey('raw',raw,{name:'AES-GCM'},extractable,['encrypt','decrypt']);
   }
   async function encryptBytes(key,plain,aad){
@@ -47,7 +46,8 @@
   }
   async function createVault(initialData,password){
     if(typeof password!=='string'||password.length<12)throw new Error('Пароль должен содержать не менее 12 символов.');
-    var c=cryptoApi(),dekRaw=randomBytes(32),dek=await importAesKey(dekRaw,true);
+    cryptoApi();
+    var dekRaw=randomBytes(32),dek=await importAesKey(dekRaw,true);
     var passwordSalt=randomBytes(16),passwordKey=await derivePasswordKey(password,passwordSalt,PBKDF2_ITERATIONS);
     var passwordWrap=await encryptBytes(passwordKey,dekRaw,'inkly:dek:password:v1');
     var recoveryRaw=randomBytes(32),recoveryCode=bytesToBase64(recoveryRaw).replace(/=/g,'');
@@ -92,7 +92,10 @@
   }
   async function encryptLibrary(record,key,data){
     validateRecord(record);
-    var payload=await encryptBytes(key,encoder.encode(JSON.stringify(data)),'inkly:library:v1');
+    if(!data||typeof data!=='object'||Array.isArray(data))throw new Error('Данные библиотеки имеют неверный формат.');
+    var serialized=JSON.stringify(data);
+    if(typeof serialized!=='string'||serialized.length>50*1024*1024)throw new Error('Размер библиотеки превышает допустимый предел.');
+    var payload=await encryptBytes(key,encoder.encode(serialized),'inkly:library:v1');
     return Object.assign({},record,{payload:payload});
   }
   function validateRecord(record){
@@ -100,7 +103,7 @@
     if(!record.kdf||record.kdf.name!=='PBKDF2-HMAC-SHA-256'||!Number.isSafeInteger(record.kdf.iterations)||record.kdf.iterations<600000||record.kdf.iterations>2000000)throw new Error('Параметры защиты пароля некорректны.');
     ['passwordWrap','recoveryWrap','payload'].forEach(function(k){
       var x=record[k];if(!x||typeof x.iv!=='string'||typeof x.ciphertext!=='string')throw new Error('Запись защищённого хранилища неполная.');
-      if(base64ToBytes(x.iv).length!==12||base64ToBytes(x.ciphertext).length<16)throw new Error('Запись защищённого хранилища повреждена.');
+      var iv=base64ToBytes(x.iv),ciphertext=base64ToBytes(x.ciphertext);if(iv.length!==12||ciphertext.length<16||ciphertext.length>50*1024*1024+16)throw new Error('Запись защищённого хранилища повреждена или слишком велика.');
     });
     if(base64ToBytes(record.passwordWrap.salt).length!==16)throw new Error('Соль защищённого хранилища повреждена.');
     return true;
