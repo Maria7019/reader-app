@@ -183,3 +183,8 @@ The UI now requests an exclusive Web Locks API lock for an unlocked vault sessio
 ### Follow-up input-rendering hardening — 2026-11-26
 
 Book-cover URLs supplied by the user are treated as untrusted input. All three current cover render paths now use a shared URL sanitizer before embedding a URL in an HTML style attribute. The sanitizer allows HTTPS and same-origin URLs only, rejects external HTTP and non-HTTP schemes, and escapes HTML attribute metacharacters. Regression coverage is included in the Node test suite. This is defense-in-depth for this specific rendering path; it is not a substitute for removing inline event handlers and tightening the CSP, nor for browser-level testing.
+
+
+### Additional input-allocation bound — 2026-11-26
+
+The shared base64 decoder rejects encoded values larger than 70 MiB before decoding. This bound accommodates the supported 50 MiB encrypted payload ceiling while avoiding unbounded allocations from oversized/corrupt local records. The unpadded 32-byte recovery code format remains supported. Two regression tests cover both behaviors. Real-browser verification remains outstanding.
