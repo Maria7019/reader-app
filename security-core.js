@@ -43,7 +43,7 @@
   async function derivePasswordKey(password,salt,iterations){
     if(typeof password!=='string'||password.length<12)throw new Error('Пароль должен содержать не менее 12 символов.');
     var material=await cryptoApi().subtle.importKey('raw',encoder.encode(password),'PBKDF2',false,['deriveKey']);
-    return cryptoApi().subtle.deriveKey({name:'PBKDF2',hash:'SHA-256',salt:salt,iterations:iterations},{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+    return cryptoApi().subtle.deriveKey({name:'PBKDF2',hash:'SHA-256',salt:salt,iterations:iterations},material,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
   }
   async function createVault(initialData,password){
     if(typeof password!=='string'||password.length<12)throw new Error('Пароль должен содержать не менее 12 символов.');
