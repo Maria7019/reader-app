@@ -134,6 +134,24 @@
       return Object.assign({},record,{payload:payload});
     }finally{plainBytes.fill(0)}
   }
+  async function rewrapPasswordWithRecovery(record,code,newPassword){
+    validateRecord(record);
+    if(!record.recoveryWrap)throw new Error('У записи отсутствует ключ восстановления.');
+    if(typeof newPassword!=='string'||newPassword.length<12)throw new Error('Пароль должен содержать не менее 12 символов.');
+    if(typeof code!=='string')throw new Error('Ключ восстановления введён в неверном формате.');
+    var raw=base64ToBytes(code.replace(/\\s+/g,''));
+    if(raw.length!==32){raw.fill(0);throw new Error('Ключ восстановления введён в неверном формате.')}
+    var dekRaw=null,salt=randomBytes(16);
+    try{
+      var recoveryKey=await importAesKey(raw,false);
+      dekRaw=await decryptBytes(recoveryKey,record.recoveryWrap,'inkly:dek:recovery:v1');
+      var passwordKey=await derivePasswordKey(newPassword,salt,PBKDF2_ITERATIONS);
+      var wrapped=await encryptBytes(passwordKey,dekRaw,'inkly:dek:password:v1');
+      var next=Object.assign({},record,{kdf:{name:'PBKDF2-HMAC-SHA-256',iterations:PBKDF2_ITERATIONS},passwordWrap:{salt:bytesToBase64(salt),iv:wrapped.iv,ciphertext:wrapped.ciphertext},deviceWrap:null});
+      validateRecord(next);
+      return next;
+    }finally{raw.fill(0);salt.fill(0);if(dekRaw)dekRaw.fill(0)}
+  }
   async function encryptBackup(data,passphrase){
     if(typeof passphrase!=='string'||passphrase.length<12)throw new Error('Пароль резервной копии должен содержать не менее 12 символов.');
     if(!data||typeof data!=='object'||Array.isArray(data)||!Array.isArray(data.books)||!Array.isArray(data.disciplines))throw new Error('Данные резервной копии имеют неверный формат.');
@@ -186,6 +204,7 @@
     unlockWithPassword:unlockWithPassword,
     unlockWithDeviceKey:unlockWithDeviceKey,
     unlockWithRecoveryCode:unlockWithRecoveryCode,
+    rewrapPasswordWithRecovery:rewrapPasswordWithRecovery,
     decryptLibrary:decryptLibrary,
     encryptLibrary:encryptLibrary,
     encryptBackup:encryptBackup,
