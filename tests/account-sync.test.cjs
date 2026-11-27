@@ -39,3 +39,20 @@ test('device-only vault can be upgraded to password wrapping with its recovery k
   const key = await core.unlockWithPassword(upgraded, 'new cloud vault password 2026');
   assert.deepEqual(await core.decryptLibrary(upgraded, key), data);
 });
+
+test('mobile PWA manifest declares install metadata and app icons', () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'manifest.webmanifest'), 'utf8'));
+  assert.equal(manifest.name, 'Inkly — книжный дневник');
+  assert.equal(manifest.display, 'standalone');
+  assert.ok(manifest.icons.some(icon => icon.sizes === '192x192'));
+  assert.ok(manifest.icons.some(icon => icon.sizes === '512x512'));
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  assert.match(html, /rel="manifest" href="\.\/manifest\.webmanifest"/);
+  assert.match(html, /serviceWorker\.register\('\.\/service-worker\.js'/);
+});
+
+test('service worker does not intercept cross-origin Supabase traffic', () => {
+  const sw = fs.readFileSync(path.join(__dirname, '..', 'service-worker.js'), 'utf8');
+  assert.match(sw, /if\(url\.origin!==self\.location\.origin\)return/);
+  assert.match(sw, /if\(request\.method!=='GET'\)return/);
+});
