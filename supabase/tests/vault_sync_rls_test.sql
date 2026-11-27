@@ -69,7 +69,7 @@ set local role authenticated;
 select pg_catalog.set_config('request.jwt.claim.sub', '20000000-0000-4000-8000-000000000002', true);
 
 select lives_ok(
-  $ insert into public.vault_sync (user_id, envelope) values ('20000000-0000-4000-8000-000000000002', '{"format":"test-ciphertext"}'::jsonb) $,
+  $$ insert into public.vault_sync (user_id, envelope) values ('20000000-0000-4000-8000-000000000002', '{"format":"test-ciphertext"}'::jsonb) $$,
   'account B can create its own encrypted envelope'
 );
 
