@@ -117,7 +117,7 @@
     }
 
     async function installEncryptedEnvelope(envelope,credential,credentialType){
-      if(status==='unlocked')throw new Error('Перед восстановлением сначала заблокируйте библиотеку.');
+      if(status!=='setup-required')throw new Error('Облачное восстановление доступно только на устройстве без существующей локальной библиотеки.');
       crypto.validateRecord(envelope);
       if(!envelope.passwordWrap||envelope.deviceWrap)throw new Error('Облачная копия не поддерживает парольную защиту.');
       var key=credentialType==='recovery'?await crypto.unlockWithRecoveryCode(envelope,credential):await crypto.unlockWithPassword(envelope,credential);
