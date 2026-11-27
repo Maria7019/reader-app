@@ -1,9 +1,6 @@
 name: Supabase database security tests
 
 on:
-  push:
-    branches:
-      - feature/account-sync
   pull_request:
     branches:
       - security/audit-baseline
