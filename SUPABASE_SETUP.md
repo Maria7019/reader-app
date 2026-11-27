@@ -43,6 +43,6 @@ The public project configuration is now stored in `supabase-config.js` on the `f
 
 ## 5. Before enabling registration
 
-The live app must have a stable HTTPS address so confirmation and password-reset links return to the correct mobile PWA. The final callback URL must be added to Supabase's allowed redirect URLs. We have not selected or deployed the app's stable HTTPS origin yet, so do not configure a guessed callback URL. The auth client must be locally bundled, use IndexedDB-backed session persistence, and be tested on the target Android browser.
+The live app must have a stable HTTPS address so confirmation and password-reset links return to the correct mobile PWA. The final callback URL must be added to Supabase's allowed redirect URLs. We have not deployed the app or selected its final HTTPS origin yet, so do not configure a guessed callback URL. The Android app-drawer installation also requires this HTTPS deployment; the repository now contains the PWA manifest, icons, and service worker, but the app is not yet published. The feature branch uses a first-party Supabase Auth REST wrapper and stores auth sessions in IndexedDB (not localStorage). Email links return to the exact app URL and must be tested on the target Android browser.
 
 Creating the Supabase project does not publish Inkly and does not by itself enable registration. The app integration and end-to-end encryption checks must also pass.
