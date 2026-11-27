@@ -58,14 +58,18 @@ update public.vault_sync
    set envelope = '{"format":"tampered"}'::jsonb
  where user_id = '10000000-0000-4000-8000-000000000001';
 
+set local role postgres;
 select is(
   (select envelope ->> 'format' from public.vault_sync where user_id = '10000000-0000-4000-8000-000000000001'),
   'updated-test-ciphertext',
   'account B cannot update account A row'
 );
 
+set local role authenticated;
+select pg_catalog.set_config('request.jwt.claim.sub', '20000000-0000-4000-8000-000000000002', true);
+
 select lives_ok(
-  $$ insert into public.vault_sync (user_id, envelope) values ('20000000-0000-4000-8000-000000000002', '{"format":"test-ciphertext"}'::jsonb) $$,
+  $ insert into public.vault_sync (user_id, envelope) values ('20000000-0000-4000-8000-000000000002', '{"format":"test-ciphertext"}'::jsonb) $,
   'account B can create its own encrypted envelope'
 );
 
