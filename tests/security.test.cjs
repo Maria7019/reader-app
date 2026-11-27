@@ -59,6 +59,7 @@ class FakeIDBDatabase {
 }
 globalThis.indexedDB = new FakeIDBFactory();
 const indexedStore = require('../indexeddb-store.js');
+const authStorage = require('../auth-session-store.js');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/i);
@@ -575,4 +576,12 @@ test('backup validator rejects excessive nesting and oversized text fields', () 
 test('backup validator caps total object-node count', () => {
   const items = Array.from({ length: 200001 }, () => null);
   assert.throws(() => validateBackupObject({ books: [], disciplines: [], extra: items }), /слишком сложную структуру/);
+});
+
+test('Supabase auth sessions are persisted in the dedicated IndexedDB object store', async () => {
+  const session = JSON.stringify({ access_token: 'access-test', refresh_token: 'refresh-test', expires_at: 1234567890 });
+  await authStorage.setItem('supabase.auth.token', session);
+  assert.equal(await authStorage.getItem('supabase.auth.token'), session);
+  await authStorage.removeItem('supabase.auth.token');
+  assert.equal(await authStorage.getItem('supabase.auth.token'), null);
 });

@@ -91,6 +91,43 @@
       return data;
     }
 
+    async function recoverPasswordWrap(recoveryCode,newPassword){
+      if(!record)throw new Error('Защищённая библиотека ещё не создана.');
+      var updated=await crypto.rewrapPasswordWithRecovery(record,recoveryCode,newPassword);
+      await store.writeVault(updated,null);
+      record=updated;deviceKey=null;
+      return true;
+    }
+
+    async function verifyPassword(password){
+      requireUnlocked();
+      if(!record||!record.passwordWrap)throw new Error('Для синхронизации нужен парольный способ защиты библиотеки.');
+      var key=await crypto.unlockWithPassword(record,password);
+      await crypto.decryptLibrary(record,key);
+      return true;
+    }
+
+    async function exportEncryptedEnvelope(){
+      requireUnlocked();
+      await flush();
+      if(writeError)throw new Error('Последнее локальное сохранение завершилось ошибкой. Сначала повторите сохранение, затем синхронизируйте библиотеку.');
+      if(!record||!record.passwordWrap||record.deviceWrap)throw new Error('Для синхронизации сначала настройте парольную защиту библиотеки на этом устройстве.');
+      crypto.validateRecord(record);
+      return cloneData(record);
+    }
+
+    async function installEncryptedEnvelope(envelope,credential,credentialType){
+      if(status!=='setup-required')throw new Error('Облачное восстановление доступно только на устройстве без существующей локальной библиотеки.');
+      crypto.validateRecord(envelope);
+      if(!envelope.passwordWrap||envelope.deviceWrap)throw new Error('Облачная копия не поддерживает парольную защиту.');
+      var key=credentialType==='recovery'?await crypto.unlockWithRecoveryCode(envelope,credential):await crypto.unlockWithPassword(envelope,credential);
+      var opened=await crypto.decryptLibrary(envelope,key);
+      if(!opened||typeof opened!=='object'||Array.isArray(opened)||!Array.isArray(opened.books)||!Array.isArray(opened.disciplines))throw new Error('Содержимое облачной копии не прошло проверку.');
+      await store.writeVault(envelope,null);
+      record=cloneData(envelope);deviceKey=null;dek=null;data=null;status='locked';pendingSetup=null;
+      return {status:status,books:opened.books.length};
+    }
+
     function save(nextData){
       requireUnlocked();
       if(lockRequested)throw new Error('Библиотека блокируется. Повторите сохранение после разблокировки.');
@@ -133,6 +170,10 @@
       unlockWithRecoveryCode:unlockWithRecoveryCode,
       unlockWithDevice:unlockWithDevice,
       getData:getData,
+      verifyPassword:verifyPassword,
+      recoverPasswordWrap:recoverPasswordWrap,
+      exportEncryptedEnvelope:exportEncryptedEnvelope,
+      installEncryptedEnvelope:installEncryptedEnvelope,
       save:save,
       flush:flush,
       lock:lock,
