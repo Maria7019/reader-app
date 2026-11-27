@@ -10,7 +10,7 @@ The account is not a substitute for the encrypted vault. The cloud service store
 
 ## Proposed provider
 
-Use Supabase Auth + Postgres. Its email/password flow supports email confirmation and password-reset emails. Postgres Row Level Security can enforce per-account access at the database layer. Pin the browser SDK to the verified stable release `@supabase/supabase-js@2.119.2` (released 19 November 2026 at this checkpoint); bundle it locally rather than importing a floating CDN URL. The browser receives only the project's public/publishable key; the service-role key must never be included in the app, repository, or browser bundle.
+Use Supabase Auth + Postgres. Its email/password flow supports email confirmation and password-reset emails. Postgres Row Level Security can enforce per-account access at the database layer. The current static client uses Supabase Auth HTTP endpoints and the PostgREST API through small first-party modules (`auth-rest.js` and `cloud-sync.js`), avoiding a runtime CDN dependency. The browser receives only the project's public/publishable key; the service-role key must never be included in the app, repository, or browser bundle. Auth sessions are persisted in the app's IndexedDB database by `auth-session-store.js`.
 
 Official references:
 - https://supabase.com/docs/guides/auth/passwords
@@ -57,7 +57,7 @@ This first version deliberately avoids background merging of individual books. W
 ## Mobile web/PWA requirements
 
 - Configure the real HTTPS app origin as the only allowed email-confirmation and password-reset redirect.
-- Use the Supabase JavaScript client with a custom session-storage adapter backed by IndexedDB rather than its default localStorage persistence. Do not put auth tokens in URLs or application state.
+- Persist the Supabase access/refresh token pair only in the IndexedDB auth-session object store. Never write auth tokens to localStorage. Supabase email confirmation and recovery callbacks can return tokens in the URL fragment; read them immediately, persist the session, and remove the fragment from browser history.
 - Bundle the SDK locally at build time; do not load an unpinned third-party script from a CDN at runtime.
 - Extend CSP `connect-src` only with the exact configured Supabase project origin. Keep the existing Google Books origin separately allowlisted.
 - Handle email links that reopen an installed PWA/browser tab and complete the PKCE callback safely.
@@ -86,4 +86,4 @@ The hosted Supabase test email service is rate-limited and best-effort; producti
 
 ## Current implementation boundary
 
-This checkpoint adds the database migration and the architecture contract only. The repository currently has no Supabase project URL, public key, SMTP configuration, hosted origin, or browser E2E environment. Therefore live account creation and cloud sync cannot be truthfully marked as working yet. The next implementation step is to integrate the pinned Supabase SDK locally, add the IndexedDB session adapter, and extend the vault runtime with safe export/install of encrypted cloud envelopes and password re-wrapping.
+The feature branch now includes the public project configuration, Auth REST wrapper, IndexedDB session persistence, email/password registration and sign-in UI, password-reset callback handling with recovery-key rewrapping, encrypted-envelope export/install, revision-aware cloud sync, a fresh-device cloud restore path, and a mobile PWA manifest/service worker. Node regression tests cover the cryptographic rewrap and static module parsing. The hosted database migration, email delivery, allowed callback URL, live auth flows, browser/Android behavior, and multi-device end-to-end testing are still pending. Therefore live account creation and cloud sync must not yet be marked as production-verified.
