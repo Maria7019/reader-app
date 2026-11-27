@@ -55,10 +55,11 @@ select lives_ok(
 );
 
 set local role anon;
-select is(
-  (select count(*)::integer from public.vault_sync),
-  0,
-  'anonymous role cannot read encrypted envelopes'
+select throws_ok(
+  $ select count(*) from public.vault_sync $,
+  '42501',
+  null,
+  'anonymous role has no table privilege'
 );
 
 select * from finish();
