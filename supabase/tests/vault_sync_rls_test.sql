@@ -54,14 +54,13 @@ select is(
   'account B cannot read account A row'
 );
 
+update public.vault_sync
+   set envelope = '{"format":"tampered"}'::jsonb
+ where user_id = '10000000-0000-4000-8000-000000000001';
+
 select is(
-  (with changed as (
-    update public.vault_sync
-       set envelope = '{"format":"tampered"}'::jsonb
-     where user_id = '10000000-0000-4000-8000-000000000001'
-    returning 1
-  ) select count(*)::integer from changed),
-  0,
+  (select envelope ->> 'format' from public.vault_sync where user_id = '10000000-0000-4000-8000-000000000001'),
+  'updated-test-ciphertext',
   'account B cannot update account A row'
 );
 
