@@ -39,10 +39,10 @@ From Project Settings → API (or the current API Keys page), copy:
 
 These values are public client configuration, not passwords. They may be embedded in the app. Never copy the `service_role` key, secret API keys, database password, or SMTP password into the repository or mobile app.
 
-Inkly's client configuration file and local build integration will be added after the project URL and app origin are known. Do not paste credentials into source files or commit them to GitHub.
+The public project configuration is now stored in `supabase-config.js` on the `feature/account-sync` branch. It contains only the Project URL and Publishable key. These are intended for browser use; never add a secret key, service-role key, database password, recovery code, or SMTP password to this file or any client bundle.
 
 ## 5. Before enabling registration
 
-The live app must have a stable HTTPS address so confirmation and password-reset links return to the correct mobile PWA. The final callback URL must be added to Supabase's allowed redirect URLs. The auth client must be locally bundled, use IndexedDB-backed session persistence, and be tested on the target Android browser.
+The live app must have a stable HTTPS address so confirmation and password-reset links return to the correct mobile PWA. The final callback URL must be added to Supabase's allowed redirect URLs. We have not selected or deployed the app's stable HTTPS origin yet, so do not configure a guessed callback URL. The auth client must be locally bundled, use IndexedDB-backed session persistence, and be tested on the target Android browser.
 
 Creating the Supabase project does not publish Inkly and does not by itself enable registration. The app integration and end-to-end encryption checks must also pass.
