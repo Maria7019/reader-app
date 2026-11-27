@@ -8,6 +8,8 @@ on:
     branches:
       - security/audit-baseline
       - main
+    paths:
+      - 'supabase/**'
 
 permissions:
   contents: read
