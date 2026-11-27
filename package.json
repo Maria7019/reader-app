@@ -1,0 +1,12 @@
+{
+  "name": "inkly",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Static checks for the Inkly reading journal",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
