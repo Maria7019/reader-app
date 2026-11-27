@@ -16,10 +16,10 @@ self.addEventListener('fetch',event=>{
     }).catch(()=>caches.match('./index.html')));
     return;
   }
-  if(SHELL.includes(url.pathname.slice(self.registration.scope.length-self.location.origin.length-1))||/\.(?:js|svg|webmanifest)$/.test(url.pathname)){
-    event.respondWith(caches.match(request).then(cached=>{
-      const network=fetch(request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy))}return response});
-      return cached||network;
-    }));
+  if(request.destination==='script'||request.destination==='style'||request.destination==='image'||request.destination==='font'||/\\.(?:js|svg|webmanifest)$/.test(url.pathname)){
+    event.respondWith(fetch(request).then(response=>{
+      if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy))}
+      return response;
+    }).catch(()=>caches.match(request)));
   }
 });
