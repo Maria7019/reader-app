@@ -110,6 +110,7 @@
     async function exportEncryptedEnvelope(){
       requireUnlocked();
       await flush();
+      if(writeError)throw new Error('Последнее локальное сохранение завершилось ошибкой. Сначала повторите сохранение, затем синхронизируйте библиотеку.');
       if(!record||!record.passwordWrap||record.deviceWrap)throw new Error('Для синхронизации сначала настройте парольную защиту библиотеки на этом устройстве.');
       crypto.validateRecord(record);
       return cloneData(record);
