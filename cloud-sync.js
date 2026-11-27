@@ -37,5 +37,38 @@
     if(!updated||updated.length!==1)throw new Error('Версия облачной библиотеки изменилась. Локальная копия сохранена, облачная не перезаписана.');
     return updated[0];
   }
-  root.InklyCloudSync=Object.freeze({read:read,upload:upload,validateEnvelope:validateEnvelope});
+  var syncQueue=Promise.resolve();
+  async function fingerprint(envelope){
+    var bytes=new TextEncoder().encode(JSON.stringify(envelope));
+    var digest=await crypto.subtle.digest('SHA-256',bytes);
+    return Array.from(new Uint8Array(digest)).map(function(x){return x.toString(16).padStart(2,'0')}).join('');
+  }
+  function sync(runtime){
+    var operation=syncQueue.then(async function(){
+      if(!runtime||runtime.getStatus()!=='unlocked')return {status:'locked'};
+      var envelope=await runtime.exportEncryptedEnvelope(),localHash=await fingerprint(envelope);
+      var meta=await root.InklyIndexedStore.readSyncMeta();
+      var remote=await read();
+      if(!remote){
+        if(meta)throw new Error('Облачная запись отсутствует, хотя на устройстве сохранена история синхронизации. Автоматическая повторная загрузка отключена.');
+        var first=await upload(envelope,null);
+        await root.InklyIndexedStore.writeSyncMeta({revision:Number(first.revision),localHash:localHash});
+        return {status:'synced',revision:Number(first.revision),initial:true};
+      }
+      var remoteHash=await fingerprint(remote.envelope);
+      if(remoteHash===localHash){
+        await root.InklyIndexedStore.writeSyncMeta({revision:Number(remote.revision),localHash:localHash});
+        return {status:'synced',revision:Number(remote.revision),unchanged:true};
+      }
+      if(!meta)throw new Error('В облаке уже есть другая библиотека. Inkly не будет перезаписывать её автоматически.');
+      if(Number(remote.revision)!==Number(meta.revision))throw new Error('Облачная версия изменилась на другом устройстве. Локальная библиотека сохранена; требуется разрешить конфликт.');
+      if(meta.localHash!==remoteHash)throw new Error('Облачная запись не совпадает с последней подтверждённой версией. Синхронизация остановлена для защиты данных.');
+      var updated=await upload(envelope,Number(meta.revision));
+      await root.InklyIndexedStore.writeSyncMeta({revision:Number(updated.revision),localHash:localHash});
+      return {status:'synced',revision:Number(updated.revision),updated:true};
+    });
+    syncQueue=operation.catch(function(){});
+    return operation;
+  }
+  root.InklyCloudSync=Object.freeze({read:read,upload:upload,sync:sync,validateEnvelope:validateEnvelope});
 })(typeof globalThis!=='undefined'?globalThis:this);
