@@ -58,7 +58,7 @@ update public.vault_sync
    set envelope = '{"format":"tampered"}'::jsonb
  where user_id = '10000000-0000-4000-8000-000000000001';
 
-set local role postgres;
+reset role;
 
 select is(
   (select envelope ->> 'format' from public.vault_sync where user_id = '10000000-0000-4000-8000-000000000001'),
