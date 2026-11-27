@@ -48,7 +48,9 @@ test('mobile PWA manifest declares install metadata and app icons', () => {
   assert.ok(manifest.icons.some(icon => icon.sizes === '512x512'));
   const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
   assert.match(html, /rel="manifest" href="\.\/manifest\.webmanifest"/);
-  assert.match(html, /serviceWorker\.register\('\.\/service-worker\.js'/);
+  assert.match(html, /<script src="\.\/pwa-register\.js"><\/script>/);
+  const registration = fs.readFileSync(path.join(__dirname, '..', 'pwa-register.js'), 'utf8');
+  assert.match(registration, /serviceWorker\.register\('\.\/service-worker\.js'/);
 });
 
 test('service worker does not intercept cross-origin Supabase traffic', () => {
