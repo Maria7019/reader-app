@@ -1,6 +1,6 @@
 'use strict';
 const CACHE='inkly-shell-v1';
-const SHELL=['./','./index.html','./manifest.webmanifest','./icon-192.svg','./icon-512.svg','./supabase-config.js','./security-core.js','./indexeddb-store.js','./vault-runtime.js','./vault-ui.js','./auth-session-store.js','./auth-rest.js','./cloud-sync.js','./auth-ui.js'];
+const SHELL=['./','./index.html','./manifest.webmanifest','./icon-192.svg','./icon-512.svg','./supabase-config.js','./security-core.js','./indexeddb-store.js','./vault-runtime.js','./vault-ui.js','./auth-session-store.js','./auth-rest.js','./cloud-sync.js','./auth-ui.js','./pwa-register.js'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',event=>{
