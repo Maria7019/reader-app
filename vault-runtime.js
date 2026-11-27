@@ -91,6 +91,14 @@
       return data;
     }
 
+    async function verifyPassword(password){
+      requireUnlocked();
+      if(!record||!record.passwordWrap)throw new Error('Для синхронизации нужен парольный способ защиты библиотеки.');
+      var key=await crypto.unlockWithPassword(record,password);
+      await crypto.decryptLibrary(record,key);
+      return true;
+    }
+
     async function exportEncryptedEnvelope(){
       requireUnlocked();
       await flush();
@@ -153,6 +161,7 @@
       unlockWithRecoveryCode:unlockWithRecoveryCode,
       unlockWithDevice:unlockWithDevice,
       getData:getData,
+      verifyPassword:verifyPassword,
       exportEncryptedEnvelope:exportEncryptedEnvelope,
       installEncryptedEnvelope:installEncryptedEnvelope,
       save:save,
