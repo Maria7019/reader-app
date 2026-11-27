@@ -60,17 +60,11 @@ update public.vault_sync
 
 set local role postgres;
 
--- Inspect the protected row as the database owner after proving account B cannot see it.
-set local role postgres;
-
 select is(
   (select envelope ->> 'format' from public.vault_sync where user_id = '10000000-0000-4000-8000-000000000001'),
   'updated-test-ciphertext',
   'account B cannot update account A row'
 );
-
-set local role authenticated;
-select pg_catalog.set_config('request.jwt.claim.sub', '20000000-0000-4000-8000-000000000002', true);
 
 set local role authenticated;
 select pg_catalog.set_config('request.jwt.claim.sub', '20000000-0000-4000-8000-000000000002', true);
