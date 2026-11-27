@@ -1,5 +1,6 @@
 (function(root){
   'use strict';
+  var vaultVerified=false;
   function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
   function host(){if(typeof root.modal!=='function')throw new Error('Интерфейс Inkly ещё загружается.');}
   function redirectUrl(){return root.location.origin+root.location.pathname}
@@ -8,8 +9,9 @@
     return root.InklyAuth.loadSession().then(async function(session){
       var user=session?await root.InklyAuth.currentUser().catch(function(){return null}):null;
       if(user){
-        root.modal('<div class="dialog-head"><h2>Аккаунт Inkly</h2><button class="close" type="button" onclick="closeModal()">×</button></div><p>Вы вошли как <strong>'+esc(user.email||'')+'</strong>.</p><div id="inkly-account-status" class="muted">'+esc(message||'Проверка облачной библиотеки доступна после входа.')+'</div><div class="actions"><button class="btn" type="button" id="inkly-sync-now">Проверить синхронизацию</button><button class="btn light" type="button" id="inkly-signout">Выйти</button></div><p class="muted">На сервер передаётся только зашифрованная копия. Пароль, ключ восстановления и заметки в открытом виде не отправляются.</p>');
+        root.modal('<div class="dialog-head"><h2>Аккаунт Inkly</h2><button class="close" type="button" onclick="closeModal()">×</button></div><p>Вы вошли как <strong>'+esc(user.email||'')+'</strong>.</p><div id="inkly-account-status" class="muted">'+esc(message||'Проверка облачной библиотеки доступна после входа.')+'</div><div class="field"><label for="inkly-vault-password">Пароль защищённой библиотеки для подтверждения синхронизации</label><input id="inkly-vault-password" type="password" autocomplete="current-password"></div><div class="actions"><button class="btn" type="button" id="inkly-verify-sync">Подтвердить пароль и синхронизировать</button><button class="btn light" type="button" id="inkly-sync-now">Проверить синхронизацию</button><button class="btn light" type="button" id="inkly-signout">Выйти</button></div><p class="muted">На сервер передаётся только зашифрованная копия. Пароль, ключ восстановления и заметки в открытом виде не отправляются.</p>');
         document.getElementById('inkly-sync-now').onclick=syncNow;
+        document.getElementById('inkly-verify-sync').onclick=verifyAndSync;
         document.getElementById('inkly-signout').onclick=signOut;
       }else{
         root.modal('<div class="dialog-head"><h2>Аккаунт Inkly</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="tabs"><button type="button" id="inkly-tab-login" class="active">Войти</button><button type="button" id="inkly-tab-signup">Регистрация</button></div><form id="inkly-auth-form"><div class="field"><label for="inkly-email">Электронная почта</label><input id="inkly-email" type="email" autocomplete="email" required></div><div class="field"><label for="inkly-password">Пароль</label><input id="inkly-password" type="password" minlength="12" autocomplete="current-password" required></div><div class="field" id="inkly-repeat-wrap" hidden><label for="inkly-password-repeat">Повторите пароль</label><input id="inkly-password-repeat" type="password" minlength="12" autocomplete="new-password"></div><button class="btn" type="submit" id="inkly-auth-submit">Войти</button></form><button class="btn ghost small" type="button" id="inkly-forgot">Забыли пароль?</button><p id="inkly-auth-status" class="muted" role="status">'+esc(message||'Пароль аккаунта должен совпадать с паролем защищённой библиотеки, чтобы связать её с облаком.')+'</p><p class="muted">Минимум 12 символов. Подтверждение регистрации придёт на почту. Сброс пароля аккаунта сам по себе не расшифровывает библиотеку.</p>');
@@ -53,25 +55,30 @@
     if(!user)throw new Error('Сервер не подтвердил вход.');
     if(root.vaultRuntime&&root.vaultRuntime.getStatus()==='unlocked'){
       if(!password||!root.vaultRuntime.verifyPassword)throw new Error('Для привязки аккаунта разблокируйте библиотеку и введите тот же пароль, которым она защищена.');
-      await root.vaultRuntime.verifyPassword(password);
+      await root.vaultRuntime.verifyPassword(password);vaultVerified=true;
     }
     root.closeModal();
     await render('Аккаунт подключён. Проверяем наличие облачной копии…');
     await syncNow();
   }
+  async function verifyAndSync(){
+    var field=document.getElementById('inkly-vault-password'),status=document.getElementById('inkly-account-status'),password=field&&field.value||'';
+    try{
+      if(!root.vaultRuntime||root.vaultRuntime.getStatus()!=='unlocked')throw new Error('Сначала разблокируйте локальную библиотеку.');
+      await root.vaultRuntime.verifyPassword(password);vaultVerified=true;
+      if(field)field.value='';
+      await syncNow();
+    }catch(err){if(status)status.textContent=err.message||'Не удалось подтвердить пароль библиотеки.'}
+    password=null;
+  }
   async function syncNow(){
     var status=document.getElementById('inkly-account-status');
+    if(!vaultVerified){if(status)status.textContent='Перед первой синхронизацией подтвердите пароль локальной библиотеки. Он должен совпадать с паролем аккаунта.';return}
     if(status)status.textContent='Проверяем облачную библиотеку…';
     try{
-      var remote=await root.InklyCloudSync.read();
-      if(remote){
-        if(status)status.textContent='В облаке уже есть зашифрованная библиотека (версия '+remote.revision+'). Автоматическая перезапись отключена. Сначала нужно безопасно сравнить и выбрать копию.';
-        return;
-      }
       if(!root.vaultRuntime||root.vaultRuntime.getStatus()!=='unlocked')throw new Error('Сначала разблокируйте локальную библиотеку.');
-      var envelope=await root.vaultRuntime.exportEncryptedEnvelope();
-      var saved=await root.InklyCloudSync.upload(envelope,null);
-      if(status)status.textContent='Первая зашифрованная копия сохранена в облаке. Версия '+saved.revision+'.';
+      var result=await root.InklyCloudSync.sync(root.vaultRuntime);
+      if(status)status.textContent=result.status==='synced'?'Синхронизация завершена. Облачная версия: '+result.revision+'.':'Библиотека сохранена локально; для синхронизации разблокируйте её.';
     }catch(err){if(status)status.textContent=err.message||'Синхронизация не выполнена.'}
   }
   async function signOut(){
@@ -91,6 +98,6 @@
       }else if(callback){render('Почта подтверждена. Теперь войдите в аккаунт Inkly.')}
     }catch(e){if(root.console)console.warn('Inkly auth callback:',e)}
   }
-  root.InklyAccountUI=Object.freeze({open:render,handleCallback:handleCallback});
+  root.InklyAccountUI=Object.freeze({open:render,handleCallback:handleCallback,isVerified:function(){return vaultVerified;}});
   if(root.document)root.document.addEventListener('DOMContentLoaded',handleCallback);
 })(typeof globalThis!=='undefined'?globalThis:this);
