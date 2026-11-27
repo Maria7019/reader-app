@@ -43,6 +43,13 @@
     var digest=await crypto.subtle.digest('SHA-256',bytes);
     return Array.from(new Uint8Array(digest)).map(function(x){return x.toString(16).padStart(2,'0')}).join('');
   }
+  async function adoptRemote(remote){
+    if(!remote||!Number.isSafeInteger(Number(remote.revision))||Number(remote.revision)<1)throw new Error('Облачная запись имеет неверный формат.');
+    validateEnvelope(remote.envelope);
+    var hash=await fingerprint(remote.envelope);
+    await root.InklyIndexedStore.writeSyncMeta({revision:Number(remote.revision),localHash:hash});
+    return true;
+  }
   function sync(runtime){
     var operation=syncQueue.then(async function(){
       if(!runtime||runtime.getStatus()!=='unlocked')return {status:'locked'};
@@ -70,5 +77,5 @@
     syncQueue=operation.catch(function(){});
     return operation;
   }
-  root.InklyCloudSync=Object.freeze({read:read,upload:upload,sync:sync,validateEnvelope:validateEnvelope});
+  root.InklyCloudSync=Object.freeze({read:read,upload:upload,sync:sync,adoptRemote:adoptRemote,validateEnvelope:validateEnvelope});
 })(typeof globalThis!=='undefined'?globalThis:this);
