@@ -38,8 +38,13 @@
     return updated[0];
   }
   var syncQueue=Promise.resolve();
+  function canonical(value){
+    if(Array.isArray(value))return value.map(canonical);
+    if(value&&typeof value==='object'){var out={};Object.keys(value).sort().forEach(function(key){out[key]=canonical(value[key])});return out}
+    return value;
+  }
   async function fingerprint(envelope){
-    var bytes=new TextEncoder().encode(JSON.stringify(envelope));
+    var bytes=new TextEncoder().encode(JSON.stringify(canonical(envelope)));
     var digest=await crypto.subtle.digest('SHA-256',bytes);
     return Array.from(new Uint8Array(digest)).map(function(x){return x.toString(16).padStart(2,'0')}).join('');
   }
