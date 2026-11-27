@@ -64,8 +64,8 @@
     if(result&&result.id)user=result;return result;
   }
   async function signOut(){
-    var token=await accessToken();
-    try{if(token)await request('/auth/v1/logout',{method:'POST',headers:{Authorization:'Bearer '+token}})}finally{await saveSession(null)}
+    var token=null;
+    try{token=await accessToken();if(token)await request('/auth/v1/logout',{method:'POST',headers:{Authorization:'Bearer '+token}})}finally{await saveSession(null)}
   }
   async function currentUser(){
     var token=await accessToken();if(!token)return null;
