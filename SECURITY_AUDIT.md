@@ -146,3 +146,27 @@ A further defensive check now rejects base64-encoded vault fields larger than th
 ## Follow-up review — 2026-11-26 (backup import hardening)
 
 Backup validation now recursively inspects the parsed import tree before applying it. It rejects prototype-sensitive property names (`__proto__`, `prototype`, `constructor`), excessive nesting (over 40 levels), strings over 2 MiB, and structures exceeding 200,000 visited nodes. This reduces prototype-pollution and resource-exhaustion risks in imported data. Three adversarial regression tests were added. The current suite contains 55 Node tests; both latest GitHub Actions runs for the implementation commit completed successfully. This does not replace browser-level backup/restore testing.
+
+
+## Consolidated status — 2026-11-28
+
+This section supersedes earlier intermediate test counts and checkpoint statements in the historical notes above.
+
+- Current draft branch: `security/audit-baseline`.
+- Current implementation checkpoint before this documentation update: `5e9ff180e2cdff7fa0eeedacc03c5fbb98e64069`.
+- Current Node regression suite: 55 tests.
+- Both GitHub Actions checks for that checkpoint completed successfully.
+- Encrypted IndexedDB vault, password and recovery-key unlock, device unlock where available, inactivity/manual lock, encrypted backup export/import, legacy backup compatibility, non-destructive legacy migration handling, cover URL hardening, bounded decoding, and recursive backup-import validation are implemented in the draft branch.
+- The draft PR remains unmerged; `main` is unchanged and no deployment has been performed.
+
+### Work that can be verified automatically
+The repository's Node regression suite and GitHub Actions checks are passing. The test adapter is not a real browser and cannot establish IndexedDB transaction semantics, CryptoKey structured cloning, browser lifecycle behavior, mobile performance, or actual UI usability.
+
+### Remaining release gates requiring a real browser/device
+The remaining functional checks are now consolidated in [`RELEASE_CHECKLIST.md`](./RELEASE_CHECKLIST.md): first-run setup, legacy migration, password/recovery unlock, lock/restart lifecycle, editing/persistence, encrypted and legacy backup restore, storage failure behavior, multi-tab contention, Android performance, and network inspection.
+
+### Known CSP limitation
+The app still has 59 inline event-handler attributes in `index.html`. The current CSP therefore retains `'unsafe-inline'` for scripts. This is a known hardening limitation, not a completed CSP lockdown. Removing it safely requires converting the handlers to delegated events and regression-testing all affected screens. It is not appropriate to remove the exception while those handlers remain, because doing so would break application interactions.
+
+### Release decision
+The current state is a tested security-development draft, not a browser-verified production release. The only remaining acceptance work that cannot be completed from the repository-only environment is the real-browser/device checklist and the full event-handler/CSP refactor. Do not mark the application production-ready or merge/deploy until these items are reviewed.
