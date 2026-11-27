@@ -1,0 +1,34 @@
+name: Inkly account and sync checks
+
+on:
+  push:
+    branches:
+      - feature/account-sync
+  pull_request:
+    branches:
+      - security/audit-baseline
+    paths:
+      - 'auth-*.js'
+      - 'cloud-sync.js'
+      - 'vault-runtime.js'
+      - 'security-core.js'
+      - 'indexeddb-store.js'
+      - 'vault-ui.js'
+      - 'index.html'
+      - 'tests/**'
+      - 'package.json'
+      - '.github/workflows/account-sync-checks.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  regression-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run Inkly regression tests
+        run: npm test
