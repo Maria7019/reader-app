@@ -30,7 +30,10 @@ jobs:
       - name: Start local Supabase services
         run: supabase start -x studio,edge-runtime,logflare,vector
 
-      - name: Apply migrations and run pgTAP tests
+      - name: Apply database migrations
+        run: supabase db reset
+
+      - name: Run pgTAP security tests
         run: supabase test db
 
       - name: Stop local Supabase services
