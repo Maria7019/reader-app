@@ -32,7 +32,6 @@
           try{
             if(mode==='signup'){
               var result=await root.InklyAuth.signUp(email,password,redirectUrl());
-              password=null;
               if(result&&result.access_token){status.textContent='Аккаунт создан. Проверяем локальную библиотеку…';await afterLogin(password);password=null}
               else status.textContent='Письмо с подтверждением отправлено, если адрес допустим. Откройте ссылку из письма, вернитесь в Inkly и войдите с тем же паролем.';
             }else{
