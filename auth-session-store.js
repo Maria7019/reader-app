@@ -46,4 +46,5 @@
     return transaction('readwrite',function(store){return store.delete(KEY)});
   }
   root.InklyAuthStorage=Object.freeze({getItem:getItem,setItem:setItem,removeItem:removeItem});
+  if(typeof module!=='undefined'&&module.exports)module.exports=root.InklyAuthStorage;
 })(typeof globalThis!=='undefined'?globalThis:this);
