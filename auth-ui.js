@@ -89,6 +89,24 @@
       if(typeof root.toast==='function')root.toast('Вы вышли из аккаунта Inkly. Локальная зашифрованная библиотека сохранена.');
     }catch(err){var status=document.getElementById('inkly-account-status');if(status)status.textContent=err.message||'Не удалось завершить выход.'}
   }
+  async function restoreFromCloud(){
+    host();
+    root.modal('<div class="dialog-head"><h2>Восстановить библиотеку</h2><button class="close" type="button" onclick="closeModal()">×</button></div><p>Войдите в аккаунт, в котором хранится зашифрованная библиотека. Для расшифровки используйте пароль библиотеки или ключ восстановления.</p><form id="inkly-restore-form"><div class="field"><label>Электронная почта аккаунта</label><input id="inkly-restore-email" type="email" autocomplete="email" required></div><div class="field"><label>Пароль аккаунта</label><input id="inkly-restore-password" type="password" autocomplete="current-password" required></div><div class="field"><label>Ключ восстановления библиотеки (если пароль библиотеки отличается от пароля аккаунта)</label><input id="inkly-restore-recovery" type="password" autocomplete="off"></div><button class="btn" type="submit">Войти и восстановить</button></form><p id="inkly-restore-status" class="muted" role="status"></p>');
+    document.getElementById('inkly-restore-form').onsubmit=async function(e){
+      e.preventDefault();var email=document.getElementById('inkly-restore-email').value.trim(),password=document.getElementById('inkly-restore-password').value,recovery=document.getElementById('inkly-restore-recovery').value.trim(),status=document.getElementById('inkly-restore-status');
+      status.textContent='Входим в аккаунт и ищем облачную копию…';
+      try{
+        await root.InklyAuth.signIn(email,password);
+        var remote=await root.InklyCloudSync.read();
+        if(!remote)throw new Error('Для этого аккаунта пока нет облачной библиотеки.');
+        try{await root.vaultRuntime.installEncryptedEnvelope(remote.envelope,password,'password')}
+        catch(passwordError){if(!recovery)throw new Error('Пароль аккаунта не открыл библиотеку. Введите ключ восстановления.');await root.vaultRuntime.installEncryptedEnvelope(remote.envelope,recovery,'recovery')}
+        await root.InklyCloudSync.adoptRemote(remote);
+        password=null;recovery=null;status.textContent='Зашифрованная библиотека восстановлена. Перезапускаем Inkly…';
+        root.setTimeout(function(){root.location.reload()},700);
+      }catch(err){password=null;recovery=null;status.textContent=err.message||'Не удалось восстановить библиотеку. Локальные данные не были заменены.'}
+    };
+  }
   async function handleCallback(){
     try{
       var callback=await root.InklyAuth.handleAuthCallback();
@@ -98,6 +116,6 @@
       }else if(callback){render('Почта подтверждена. Теперь войдите в аккаунт Inkly.')}
     }catch(e){if(root.console)console.warn('Inkly auth callback:',e)}
   }
-  root.InklyAccountUI=Object.freeze({open:render,handleCallback:handleCallback,isVerified:function(){return vaultVerified;}});
+  root.InklyAccountUI=Object.freeze({open:render,handleCallback:handleCallback,restoreFromCloud:restoreFromCloud,isVerified:function(){return vaultVerified;}});
   if(root.document)root.document.addEventListener('DOMContentLoaded',handleCallback);
 })(typeof globalThis!=='undefined'?globalThis:this);
