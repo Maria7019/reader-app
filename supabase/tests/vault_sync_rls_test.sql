@@ -2,7 +2,7 @@
 -- Run with: supabase test db
 begin;
 
-select plan(7);
+select plan(9);
 
 insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -28,6 +28,22 @@ select is(
   (select count(*)::integer from public.vault_sync),
   1,
   'account A can read its own row'
+);
+
+select is(
+  (select revision::integer from public.vault_sync where user_id = '10000000-0000-4000-8000-000000000001'),
+  1,
+  'new cloud envelope starts at revision one'
+);
+
+update public.vault_sync
+   set envelope = '{"format":"updated-test-ciphertext"}'::jsonb
+ where user_id = '10000000-0000-4000-8000-000000000001';
+
+select is(
+  (select revision::integer from public.vault_sync where user_id = '10000000-0000-4000-8000-000000000001'),
+  2,
+  'server increments revision on every update'
 );
 
 select pg_catalog.set_config('request.jwt.claim.sub', '20000000-0000-4000-8000-000000000002', true);
