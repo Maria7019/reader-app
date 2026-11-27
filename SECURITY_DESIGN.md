@@ -193,3 +193,19 @@ The shared base64 decoder rejects encoded values larger than 70 MiB before decod
 ### Backup import structure limits — 2026-11-26
 
 Before an imported backup is applied, its object tree is recursively checked. The validator rejects prototype-sensitive keys, nesting deeper than 40 levels, individual strings larger than 2 MiB, and trees exceeding 200,000 visited nodes. This provides defense in depth against prototype pollution and pathological import payloads. The validation remains compatible with legacy and versioned backup formats covered by regression tests.
+
+
+## Consolidated implementation status — 2026-11-28
+
+The earlier sections describe the original design and historical intermediate checkpoints. The current draft implementation has progressed beyond several of those initial release-gate descriptions:
+
+- Encrypted backup export/import is implemented, including separate passphrase wrapping, authenticated encryption, validation, preview/confirmation, and legacy plaintext JSON import compatibility.
+- The encrypted IndexedDB vault, password/recovery-key unlock, device unlock where supported, manual/inactivity lock, save sequencing, legacy migration safeguards, cover URL validation, bounded base64 decoding, and recursive backup-import validation are implemented.
+- The current Node regression suite contains 55 tests. Both GitHub Actions checks passed on implementation checkpoint `5e9ff180e2cdff7fa0eeedacc03c5fbb98e64069`.
+- The current draft branch is not merged or deployed.
+
+The remaining release checks are listed in `RELEASE_CHECKLIST.md`. They require real browser/device execution: IndexedDB and CryptoKey behavior, mobile PBKDF2 latency, lifecycle and recovery flows, quota/interrupted-write behavior, multi-tab contention, backup restoration, and network inspection.
+
+The current script CSP still permits `'unsafe-inline'` because `index.html` retains inline event handlers. A safe tightening requires converting all such handlers to event delegation and testing every affected interaction. Do not remove the CSP exception before that refactor is complete.
+
+This design status is not a production sign-off. The draft must remain unmerged until the browser/device checklist and CSP follow-up have been completed and reviewed.
