@@ -1,7 +1,7 @@
 (function(root){
   'use strict';
   var DB_NAME='inkly-secure-v1';
-  var DB_VERSION=1;
+  var DB_VERSION=2;
   var STORE='vaults';
   var ACTIVE='active';
   var dbPromise=null;
@@ -19,6 +19,7 @@
       request.onupgradeneeded=function(){
         var db=request.result;
         if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE,{keyPath:'id'});
+        if(!db.objectStoreNames.contains('auth_sessions'))db.createObjectStore('auth_sessions',{keyPath:'id'});
       };
       request.onsuccess=function(){
         var db=request.result;
