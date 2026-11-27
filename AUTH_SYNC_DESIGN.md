@@ -10,7 +10,7 @@ The account is not a substitute for the encrypted vault. The cloud service store
 
 ## Proposed provider
 
-Use Supabase Auth + Postgres. Its email/password flow supports email confirmation and password-reset emails. Postgres Row Level Security can enforce per-account access at the database layer. The browser receives only the project's public/publishable key; the service-role key must never be included in the app, repository, or browser bundle.
+Use Supabase Auth + Postgres. Its email/password flow supports email confirmation and password-reset emails. Postgres Row Level Security can enforce per-account access at the database layer. Pin the browser SDK to the verified stable release `@supabase/supabase-js@2.119.2` (released 19 November 2026 at this checkpoint); bundle it locally rather than importing a floating CDN URL. The browser receives only the project's public/publishable key; the service-role key must never be included in the app, repository, or browser bundle.
 
 Official references:
 - https://supabase.com/docs/guides/auth/passwords
