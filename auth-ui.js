@@ -36,6 +36,7 @@
               var result=await root.InklyAuth.signUp(email,password,redirectUrl());
               if(result&&result.access_token){status.textContent='Аккаунт создан. Проверяем локальную библиотеку…';await afterLogin(password);password=null}
               else status.textContent='Письмо с подтверждением отправлено, если адрес допустим. Откройте ссылку из письма, вернитесь в Inkly и войдите с тем же паролем.';
+              password=null;
             }else{
               await root.InklyAuth.signIn(email,password);await afterLogin(password);password=null;
             }
@@ -55,6 +56,12 @@
     if(!user)throw new Error('Сервер не подтвердил вход.');
     if(root.vaultRuntime&&root.vaultRuntime.getStatus()==='unlocked'){
       if(!password||!root.vaultRuntime.verifyPassword)throw new Error('Для привязки аккаунта разблокируйте библиотеку и введите тот же пароль, которым она защищена.');
+      var metadata=root.vaultRuntime.getRecordMetadata();
+      if(metadata&&metadata.method==='device'){
+        var recovery=root.prompt('Эта библиотека пока защищена ключом устройства. Чтобы включить синхронизацию, введите её ключ восстановления. Он не отправляется на сервер.');
+        if(!recovery)throw new Error('Для синхронизации сначала необходимо обновить парольную защиту библиотеки.');
+        await root.vaultRuntime.recoverPasswordWrap(recovery,password);recovery=null;
+      }
       await root.vaultRuntime.verifyPassword(password);vaultVerified=true;
     }
     root.closeModal();
