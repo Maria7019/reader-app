@@ -91,6 +91,14 @@
       return data;
     }
 
+    async function recoverPasswordWrap(recoveryCode,newPassword){
+      if(!record)throw new Error('Защищённая библиотека ещё не создана.');
+      var updated=await crypto.rewrapPasswordWithRecovery(record,recoveryCode,newPassword);
+      await store.writeVault(updated,null);
+      record=updated;deviceKey=null;
+      return true;
+    }
+
     async function verifyPassword(password){
       requireUnlocked();
       if(!record||!record.passwordWrap)throw new Error('Для синхронизации нужен парольный способ защиты библиотеки.');
@@ -162,6 +170,7 @@
       unlockWithDevice:unlockWithDevice,
       getData:getData,
       verifyPassword:verifyPassword,
+      recoverPasswordWrap:recoverPasswordWrap,
       exportEncryptedEnvelope:exportEncryptedEnvelope,
       installEncryptedEnvelope:installEncryptedEnvelope,
       save:save,
