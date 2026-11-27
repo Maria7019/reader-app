@@ -47,7 +47,7 @@
     return current&&current.access_token||null;
   }
   async function signUp(email,password,redirectTo){
-    var result=await request('/auth/v1/signup',{method:'POST',body:{email:email,password:password},headers:redirectTo?{'X-Client-Info':'inkly-web','redirect-to':redirectTo}:{}});
+    var result=await request('/auth/v1/signup'+(redirectTo?'?redirect_to='+encodeURIComponent(redirectTo):''),{method:'POST',body:{email:email,password:password}});
     if(result.access_token)await saveSession(result);
     return result;
   }
