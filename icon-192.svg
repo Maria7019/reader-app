@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 512 512">
+<rect width="512" height="512" rx="112" fill="#f5f6ef"/>
+<path d="M92 133c61-25 116-18 164 18v236c-48-36-103-43-164-18z" fill="#fffefa" stroke="#6d7954" stroke-width="18" stroke-linejoin="round"/>
+<path d="M420 133c-61-25-116-18-164 18v236c48-36 103-43 164-18z" fill="#edf0e4" stroke="#6d7954" stroke-width="18" stroke-linejoin="round"/>
+<path d="M256 151v236" stroke="#6d7954" stroke-width="14" stroke-linecap="round"/>
+<path d="M131 196c35-9 68-6 97 8M131 240c35-9 68-6 97 8M381 196c-35-9-68-6-97 8M381 240c-35-9-68-6-97 8" fill="none" stroke="#b1b99e" stroke-width="10" stroke-linecap="round"/>
+<text x="256" y="456" text-anchor="middle" font-family="Georgia,serif" font-size="54" font-weight="600" fill="#30352a">Inkly</text>
+</svg>
