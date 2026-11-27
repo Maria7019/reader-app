@@ -74,6 +74,31 @@
       });
     });
   }
+  function readSyncMeta(){
+    return openDatabase().then(function(db){return new Promise(function(resolve,reject){
+      var tx=db.transaction(STORE,'readonly'),req=tx.objectStore(STORE).get('__sync_meta__'),value=null;
+      req.onsuccess=function(){value=req.result&&req.result.value||null};
+      req.onerror=function(){reject(req.error||new Error('Не удалось прочитать состояние синхронизации.'))};
+      tx.oncomplete=function(){resolve(value)};
+      tx.onerror=function(){reject(tx.error||new Error('Ошибка чтения состояния синхронизации.'))};
+    })});
+  }
+  function writeSyncMeta(value){
+    if(!value||typeof value!=='object'||!Number.isSafeInteger(value.revision)||value.revision<1||typeof value.localHash!=='string'||value.localHash.length!==64)return fail('Состояние синхронизации имеет неверный формат.');
+    return openDatabase().then(function(db){return new Promise(function(resolve,reject){
+      var tx;
+      try{tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put({id:'__sync_meta__',value:{revision:value.revision,localHash:value.localHash,updatedAt:Date.now()}})}catch(e){reject(e);return}
+      tx.oncomplete=function(){resolve(true)};
+      tx.onerror=function(){reject(tx.error||new Error('Не удалось сохранить состояние синхронизации.'))};
+      tx.onabort=function(){reject(tx.error||new Error('Сохранение состояния синхронизации отменено.'))};
+    })});
+  }
+  function clearSyncMeta(){
+    return openDatabase().then(function(db){return new Promise(function(resolve,reject){
+      var tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete('__sync_meta__');
+      tx.oncomplete=function(){resolve(true)};tx.onerror=function(){reject(tx.error||new Error('Не удалось очистить состояние синхронизации.'))};
+    })});
+  }
   function probeCryptoKeyStorage(deviceKey){
     if(!deviceKey||deviceKey.type!=='secret'||deviceKey.extractable!==false)return fail('Для проверки нужен неэкспортируемый ключ устройства.');
     return openDatabase().then(function(db){
@@ -112,6 +137,9 @@
     open:openDatabase,
     readVault:readVault,
     writeVault:writeVault,
+    readSyncMeta:readSyncMeta,
+    writeSyncMeta:writeSyncMeta,
+    clearSyncMeta:clearSyncMeta,
     probeCryptoKeyStorage:probeCryptoKeyStorage,
     close:close
   });
